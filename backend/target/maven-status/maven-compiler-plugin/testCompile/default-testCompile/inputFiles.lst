@@ -1,9 +1,0 @@
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\memory\store\MongoChatMemoryStoreTest.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\evaluation\RealLlmBenchmarkTest.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\knowledge\KnowledgeEngineTest.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\mcp\MockBusinessService.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\orchestrator\ShopAgentOrchestratorTest.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\mcp\McpEngineTest.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\workflow\domain\WorkflowDefinitionYamlTest.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\workflow\pipeline\WorkflowRendererImplTest.java
-D:\A_big\ShopMind\backend\src\test\java\com\shopmind\evaluation\EvaluationBenchmarkTest.java
