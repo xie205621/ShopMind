@@ -1,0 +1,51 @@
+/* App Layout — SAD.md §3.1 */
+
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Sidebar: 56px, icon-only ── */
+.sidebar {
+  width: 56px;
+  flex-shrink: 0;
+  background: var(--bg-root);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--space-3);
+  gap: var(--space-1);
+}
+
+.navItem {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 20px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  text-decoration: none;
+}
+
+.navItem:hover {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.navItemActive {
+  background: var(--bg-elevated);
+  color: var(--accent);
+}
+
+/* ── Content ── */
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-root);
+}

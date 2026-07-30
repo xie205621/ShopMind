@@ -1,0 +1,137 @@
+{
+  "version": "v1.0",
+  "scenario": "EDGE_CASE",
+  "description": "边界与歧义测试集 — 覆盖拼写错误、模糊查询、歧义问题、空值/特殊输入等边界场景。",
+  "cases": [
+    {
+      "id": "EDGE-001",
+      "query": "村什么颜色",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["颜色"],
+      "expectedAnswer": null,
+      "expectedFailureReason": "WRONG_INTENT",
+      "mockResponse": "您是否想问某款商品的配色？请提供具体商品名称，我帮您查询可用的颜色选项。"
+    },
+    {
+      "id": "EDGE-002",
+      "query": "tui huo",
+      "expectedIntent": "return_policy",
+      "expectedTool": null,
+      "expectedKnowledge": ["退货"],
+      "expectedAnswer": "根据退货政策，您可以在购买后7天内无理由退货。",
+      "expectedFailureReason": null,
+      "mockResponse": "关于退货，我们的政策是：购买后7天内支持无理由退货。请保持商品完好，携带原始包装。请问您需要退货哪件商品？"
+    },
+    {
+      "id": "EDGE-003",
+      "query": "我要买那个",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "KNOWLEDGE_MISS",
+      "mockResponse": "请问您想买哪个商品呢？我需要知道具体的商品名称或类别才能帮您查询信息。"
+    },
+    {
+      "id": "EDGE-004",
+      "query": "退款退款退款退款退款退款退款退款退款退款",
+      "expectedIntent": "payment",
+      "expectedTool": "refund",
+      "expectedKnowledge": ["退款"],
+      "expectedAnswer": "请提供您的订单号以便处理退款。",
+      "expectedFailureReason": null,
+      "mockResponse": "我已理解您需要退款。请提供订单号，我将使用refund工具为您处理退款申请。"
+    },
+    {
+      "id": "EDGE-005",
+      "query": "你们的衣服质量怎么样？我之前在你们这买了一件衣服感觉很不好穿，但是我朋友说你们家的东西挺好的，所以我想再试一次，但是又怕和上次一样失望，你能给我推荐一下吗？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["衣服", "质量", "推荐"],
+      "expectedAnswer": "很抱歉上次的体验不够好。根据您的描述，我为您推荐几款口碑较好的基础款。",
+      "expectedFailureReason": null,
+      "mockResponse": "很抱歉上次的体验不够好。我根据好评率为您推荐几款品质稳定的基础款：纯棉T恤（好评率98%）、直筒休闲裤（好评率96%）。这两款都是口碑很好的产品。"
+    },
+    {
+      "id": "EDGE-006",
+      "query": "包邮吗",
+      "expectedIntent": "order_query",
+      "expectedTool": null,
+      "expectedKnowledge": ["包邮", "运费"],
+      "expectedAnswer": "满99元包邮，普通商品运费10元。",
+      "expectedFailureReason": null,
+      "mockResponse": "满99元即可享受包邮。普通商品运费为10元，大件商品另有标准。您可以在结算页面查看具体运费。"
+    },
+    {
+      "id": "EDGE-007",
+      "query": "这个和这个哪个好",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "KNOWLEDGE_MISS",
+      "mockResponse": "请问您想对比哪两个商品？请告诉我具体的商品名称或链接，我帮您分析它们的优缺点。"
+    },
+    {
+      "id": "EDGE-008",
+      "query": "今天星期几？",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": "我是购物助手，无法提供日历信息。请问有什么购物问题？",
+      "expectedFailureReason": null,
+      "mockResponse": "我是ShopMind智能客服助手，专注于电商购物服务。关于日期时间信息，建议您查看手机或日历。请问有什么购物问题需要帮助？"
+    },
+    {
+      "id": "EDGE-009",
+      "query": "衣服怎么样？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "KNOWLEDGE_MISS",
+      "mockResponse": "请问您指的是哪件衣服？请提供商品名称或编号，我帮您查看详细信息、用户评价和尺码建议。"
+    },
+    {
+      "id": "EDGE-010",
+      "query": "🤔🤔🤔",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "WRONG_INTENT",
+      "mockResponse": "您好！看起来您有些疑问。请用文字描述您的问题，我很乐意帮助您。"
+    },
+    {
+      "id": "EDGE-011",
+      "query": "能便宜点吗？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["优惠", "讲价"],
+      "expectedAnswer": "商品价格为固定标价，您可以使用优惠券获得折扣。",
+      "expectedFailureReason": null,
+      "mockResponse": "商品价格是固定的，无法人工降价。不过您可以：1.使用可用优惠券 2.关注秒杀活动 3.积分兑换折扣。建议查看当前可用的优惠活动。"
+    },
+    {
+      "id": "EDGE-012",
+      "query": "我要投诉，但是我不想说为什么",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": ["投诉"],
+      "expectedAnswer": null,
+      "expectedFailureReason": "WRONG_INTENT",
+      "mockResponse": "我理解您可能遇到了不愉快。不过需要您提供一些基本信息才能记录投诉。您可以简单描述是商品问题、物流问题还是服务问题。"
+    },
+    {
+      "id": "EDGE-013",
+      "query": "上一个订单，不是这一个，也不是最开始那个，是中间那个",
+      "expectedIntent": "order_query",
+      "expectedTool": "queryOrder",
+      "expectedKnowledge": ["订单"],
+      "expectedAnswer": null,
+      "expectedFailureReason": "KNOWLEDGE_MISS",
+      "mockResponse": "我理解您想查询中间的订单，但我需要更具体的信息。请在「我的订单」页面查看订单列表，给我具体的订单号或时间范围。"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# Created at 2026-07-25T02:46:39.505
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '[7129.993s][error][attach] failure (109) writing result of operation threaddump to pipe \\.\pipe\javatool719477799'.
+

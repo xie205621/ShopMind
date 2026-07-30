@@ -1,0 +1,167 @@
+{
+  "version": "v1.0",
+  "scenario": "MULTI_TURN",
+  "description": "多轮对话测试集 — 覆盖指代消解、上下文依赖、对话状态保持、话题切换等场景。",
+  "cases": [
+    {
+      "id": "MULTI-001",
+      "query": "我的订单到哪了？",
+      "expectedIntent": "order_query",
+      "expectedTool": "queryOrder",
+      "expectedKnowledge": ["订单", "物流"],
+      "expectedAnswer": "您的订单ORD2024001当前在运输中，快递单号SF1234567890。",
+      "expectedFailureReason": null,
+      "mockResponse": "正在使用queryOrder工具查询... 您的订单ORD2024001当前状态为运输中，快递单号SF1234567890，预计明天送达。"
+    },
+    {
+      "id": "MULTI-002",
+      "query": "那它有几种颜色可选？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["颜色"],
+      "expectedAnswer": "该商品有黑色、白色、蓝色三种配色可选。",
+      "expectedFailureReason": null,
+      "mockResponse": "该商品提供黑色、白色和蓝色三种配色。目前黑色和白色库存充足，蓝色需要预订。"
+    },
+    {
+      "id": "MULTI-003",
+      "query": "我上次买的那个手机，还能退货吗？",
+      "expectedIntent": "return_policy",
+      "expectedTool": null,
+      "expectedKnowledge": ["退货", "手机", "7天"],
+      "expectedAnswer": "需要确认购买日期，如果超过7天则不支持无理由退货。",
+      "expectedFailureReason": null,
+      "mockResponse": "手机类商品支持7天无理由退货。如果您的购买时间在7天之内且商品未激活，可以申请退货。请提供订单号以便我确认。"
+    },
+    {
+      "id": "MULTI-004",
+      "query": "那换成L码吧",
+      "expectedIntent": "order_query",
+      "expectedTool": "queryOrder",
+      "expectedKnowledge": ["L码", "换货", "尺码"],
+      "expectedAnswer": "已为您提交换货申请，将换为L码。",
+      "expectedFailureReason": null,
+      "mockResponse": "好的，正在使用queryOrder工具为您处理换货... 已提交L码换货申请。请将原商品寄回，我们在收到商品后3个工作日内发出L码。"
+    },
+    {
+      "id": "MULTI-005",
+      "query": "他还是不满意，有没有更贵的推荐？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["推荐", "更贵"],
+      "expectedAnswer": "为您推荐几款更高端的商品，价格在2000-5000元区间。",
+      "expectedFailureReason": null,
+      "mockResponse": "了解。为您推荐几款更高端的礼品：名牌钱包（¥2880）、瑞士手表（¥4980）、高端茶具礼盒（¥1680）。包装精美，适合送礼。"
+    },
+    {
+      "id": "MULTI-006",
+      "query": "刚才那个订单帮我取消掉",
+      "expectedIntent": "order_query",
+      "expectedTool": "cancelOrder",
+      "expectedKnowledge": ["取消", "订单"],
+      "expectedAnswer": "已取消您刚才提到的订单。",
+      "expectedFailureReason": null,
+      "mockResponse": "正在使用cancelOrder工具取消订单... 订单已成功取消。如有扣款将在1-3个工作日内退还。"
+    },
+    {
+      "id": "MULTI-007",
+      "query": "那还有什么其他的付款方式？",
+      "expectedIntent": "payment",
+      "expectedTool": null,
+      "expectedKnowledge": ["付款方式"],
+      "expectedAnswer": "除了花呗，还支持支付宝、微信支付、银行卡和Apple Pay。",
+      "expectedFailureReason": null,
+      "mockResponse": "除了花呗分期，我们还支持支付宝、微信支付、银行卡、Apple Pay等多种付款方式。部分商品还支持货到付款。"
+    },
+    {
+      "id": "MULTI-008",
+      "query": "这两个有什么区别？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["区别", "对比"],
+      "expectedAnswer": "请您说明是哪两个商品？我可以帮您对比它们的参数和价格。",
+      "expectedFailureReason": null,
+      "mockResponse": "请问您指的是哪两个商品呢？如果您能告诉我具体的商品名称或编号，我可以帮您详细对比它们的参数、价格和用户评价。"
+    },
+    {
+      "id": "MULTI-009",
+      "query": "上次推荐的耳机确实好用，再帮我推荐一款音箱",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["音箱", "推荐"],
+      "expectedAnswer": "很高兴您喜欢上次推荐的耳机！为您推荐JBL Flip 6和Bose SoundLink两款音箱。",
+      "expectedFailureReason": null,
+      "mockResponse": "很高兴您喜欢之前推荐的耳机！为您推荐两款热门音箱：JBL Flip 6（¥499，防水便携）和Bose SoundLink（¥1299，音质出众）。"
+    },
+    {
+      "id": "MULTI-010",
+      "query": "他买的是哪一款？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "KNOWLEDGE_MISS",
+      "mockResponse": "很抱歉，我没有历史对话记录来判断您之前讨论的是哪一款商品。请重新描述您想了解的商品信息。"
+    },
+    {
+      "id": "MULTI-011",
+      "query": "帮我查一下积分，然后告诉我能换什么",
+      "expectedIntent": "greeting",
+      "expectedTool": "queryPoints",
+      "expectedKnowledge": ["积分", "兑换"],
+      "expectedAnswer": "您有1250积分，可以兑换20元优惠券或免邮券。",
+      "expectedFailureReason": null,
+      "mockResponse": "正在使用queryPoints工具查询... 您当前有1250积分。可兑换：20元优惠券（800积分）、免邮券（500积分）、10元话费券（1000积分）。"
+    },
+    {
+      "id": "MULTI-012",
+      "query": "就是刚才那个JBL的，有优惠吗？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["JBL", "优惠"],
+      "expectedAnswer": "JBL Flip 6目前有满300减30的活动，叠加平台优惠券可再减20。",
+      "expectedFailureReason": null,
+      "mockResponse": "JBL Flip 6目前参加满300减30活动，叠加平台优惠券还可再减20元。结算时自动计算最优优惠组合。"
+    },
+    {
+      "id": "MULTI-013",
+      "query": "把这些都加到购物车",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["购物车"],
+      "expectedAnswer": "抱歉，我目前无法直接操作购物车。您可以在商品页面手动添加。",
+      "expectedFailureReason": null,
+      "mockResponse": "抱歉，我目前没有直接操作购物车的权限。建议您在商品详情页点击「加入购物车」按钮添加，或使用平台的批量加购功能。"
+    },
+    {
+      "id": "MULTI-014",
+      "query": "还差多少能升级会员？",
+      "expectedIntent": "greeting",
+      "expectedTool": "queryPoints",
+      "expectedKnowledge": ["会员", "升级", "消费"],
+      "expectedAnswer": "您还差750元消费即可从金卡升级为钻石会员。",
+      "expectedFailureReason": null,
+      "mockResponse": "正在使用queryPoints工具查询... 您当前为金卡会员（年消费¥4250），还需消费¥750即可升级为钻石会员，享受更高级别权益。"
+    },
+    {
+      "id": "MULTI-015",
+      "query": "那算了，太复杂了",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": "没关系！如果您需要任何帮助，随时可以联系我。",
+      "expectedFailureReason": null,
+      "mockResponse": "没关系！如果有任何需要帮助的地方，随时可以来找我。祝您购物愉快！"
+    },
+    {
+      "id": "MULTI-016",
+      "query": "和上次一样，用微信支付",
+      "expectedIntent": "payment",
+      "expectedTool": null,
+      "expectedKnowledge": ["微信", "支付"],
+      "expectedAnswer": "好的，已为您选择微信支付。请确认订单后完成支付。",
+      "expectedFailureReason": null,
+      "mockResponse": "好的，已记录您的偏好：微信支付。不过我需要您先确认具体要购买的商品和订单信息，才能帮您完成支付流程。"
+    }
+  ]
+}

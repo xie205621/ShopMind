@@ -1,0 +1,339 @@
+{
+  "experimentId" : "real-deepseek-v21",
+  "workflowVersion" : "v2.1",
+  "metadata" : {
+    "experimentId" : "real-deepseek-v21",
+    "workflowVersion" : "v2.1",
+    "datasetVersion" : "benchmark_v1.0",
+    "llmProvider" : "deepseek-chat",
+    "temperature" : 0.1,
+    "topP" : 0.9,
+    "embeddingModel" : "text-embedding-v3",
+    "vectorStore" : "InMemory",
+    "maxConcurrency" : 3,
+    "rpmLimit" : 10
+  },
+  "generatedAt" : 1784876112.613140900,
+  "totalCases" : 126,
+  "passedCases" : 0,
+  "failedDetails" : [ {
+    "testCaseId" : "EDGE-002",
+    "query" : "tui huo",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-003",
+    "query" : "我要买那个",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-001",
+    "query" : "村什么颜色",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-005",
+    "query" : "你们的衣服质量怎么样？我之前在你们这买了一件衣服感觉很不好穿，但是我朋友说你们家的东西挺好的，所以我想再试一次，但是又怕和上次一样失望，你能给我推荐一下吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-004",
+    "query" : "退款退款退款退款退款退款退款退款退款退款",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-006",
+    "query" : "包邮吗",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-007",
+    "query" : "这个和这个哪个好",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-008",
+    "query" : "今天星期几？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-009",
+    "query" : "衣服怎么样？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-010",
+    "query" : "🤔🤔🤔",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-012",
+    "query" : "我要投诉，但是我不想说为什么",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-013",
+    "query" : "上一个订单，不是这一个，也不是最开始那个，是中间那个",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-011",
+    "query" : "能便宜点吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-001",
+    "query" : "我的订单到哪了？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-002",
+    "query" : "那它有几种颜色可选？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-003",
+    "query" : "我上次买的那个手机，还能退货吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-004",
+    "query" : "那换成L码吧",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-005",
+    "query" : "他还是不满意，有没有更贵的推荐？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-006",
+    "query" : "刚才那个订单帮我取消掉",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-007",
+    "query" : "那还有什么其他的付款方式？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-010",
+    "query" : "他买的是哪一款？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-008",
+    "query" : "这两个有什么区别？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-009",
+    "query" : "上次推荐的耳机确实好用，再帮我推荐一款音箱",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-012",
+    "query" : "就是刚才那个JBL的，有优惠吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-013",
+    "query" : "把这些都加到购物车",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-011",
+    "query" : "帮我查一下积分，然后告诉我能换什么",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-015",
+    "query" : "那算了，太复杂了",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-014",
+    "query" : "还差多少能升级会员？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-016",
+    "query" : "和上次一样，用微信支付",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-001",
+    "query" : "这条裤子的退货政策是什么？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-004",
+    "query" : "这款手机支持5G吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-002",
+    "query" : "我想查询订单ORD2024001的物流状态",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-003",
+    "query" : "你好",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-007",
+    "query" : "我的订单什么时候发货？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-006",
+    "query" : "这件衣服是什么材质的？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-005",
+    "query" : "怎么退款到微信？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-008",
+    "query" : "支持花呗分期吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-010",
+    "query" : "早上好",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-009",
+    "query" : "换货需要多长时间？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-011",
+    "query" : "这个耳机的降噪效果怎么样？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-012",
+    "query" : "修改收货地址",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-013",
+    "query" : "可以用支付宝吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-014",
+    "query" : "退货需要包装完好吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-015",
+    "query" : "有没有适合送长辈的礼物推荐？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-017",
+    "query" : "请问客服在吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-016",
+    "query" : "如何查看我的优惠券？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-018",
+    "query" : "发票怎么开？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-019",
+    "query" : "这个包有多重？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-020",
+    "query" : "退货退款要多久到账？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "NORMAL-021",
+    "query" : "我的快递什么时候到？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "",
+    "diagnostics" : "意图识别错误"
+  } ],
+  "metrics" : {
+    "intentAccuracy" : 0.0,
+    "avgRecallAtK" : 0.2222222222222222,
+    "hallucinationRate" : 0.0,
+    "toolAccuracy" : 0.6746031746031746,
+    "taskSuccessRate" : 0.0,
+    "avgTtftMs" : 1251.1190476190477,
+    "p95LatencyMs" : 1976.0,
+    "workflowCompletionRate" : 1.0
+  },
+  "failureDistribution" : {
+    "WRONG_INTENT" : 1.0
+  },
+  "cost" : {
+    "totalPromptTokens" : 0,
+    "totalCompletionTokens" : 0,
+    "estimatedCostUsd" : 0.0,
+    "pricingModel" : "deepseek-chat"
+  }
+}

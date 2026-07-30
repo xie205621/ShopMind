@@ -1,0 +1,40 @@
+# 测试环境：Flapdoodle 内嵌 MongoDB
+spring:
+  data:
+    mongodb:
+      database: test_shopmind
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 7.0.0
+
+shopmind:
+  memory:
+    max-messages: 20
+  knowledge:
+    cache:
+      max-size: 100
+      ttl-minutes: 1
+  mcp:
+    timeout-ms: 3000
+  orchestrator:
+    max-iterations: 3
+
+# Resilience4j CircuitBreaker (测试环境：快速熔断以验证降级逻辑)
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 2
+    instances:
+      llmProvider:
+        base-config: default
+
+logging:
+  level:
+    com.shopmind.memory: DEBUG

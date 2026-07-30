@@ -1,0 +1,146 @@
+{
+  "experimentId" : "eval-002",
+  "metadata" : {
+    "experimentId" : "eval-002",
+    "workflowVersion" : "v2.1",
+    "datasetVersion" : "benchmark_v1",
+    "llmProvider" : "qwen-max",
+    "temperature" : 0.1,
+    "topP" : 0.9,
+    "embeddingModel" : "bge-m3",
+    "vectorStore" : "InMemory",
+    "maxConcurrency" : 5,
+    "rpmLimit" : 60
+  },
+  "generatedAt" : 1784814729.289581400,
+  "totalCases" : 40,
+  "passedCases" : 23,
+  "failedDetails" : [ {
+    "testCaseId" : "TC026",
+    "query" : "我想付款",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "这款产品采用进口原料，经过严格质检。产品详情页有完整的参数介绍。如有任何疑问，请查看商品说明。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC021",
+    "query" : "我的快递什么时候到？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "如果您需要退换商品，可以在购买记录中找到相关入口。我们的退换政策是7天无理由。请在商品页面提交申请，审核通过后退款会尽快处理。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC032",
+    "query" : "你好，我要投诉",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "您的反馈已记录，请通过在线表单提交详细内容。我们会尽快处理并给您回复。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC034",
+    "query" : "国际运费怎么算？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "国内运费为10元，满99元包邮。关于运费的具体规则，您可以查看首页的配送说明页面。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC022",
+    "query" : "帮我查一下这个订单的状态",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用refund工具处理您的退款申请。请提供订单号和退款原因，我们将在1-3个工作日内完成退款审核。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC027",
+    "query" : "申请退款这个订单",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用queryOrder工具查询您的订单... 订单号ORD2024001，当前状态：已完成。如需退款，请前往订单页面操作。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC033",
+    "query" : "搜索蓝牙耳机",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用queryOrder工具查询订单... 未找到相关订单。建议您前往商品页面，使用搜索功能查找蓝牙耳机。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC031",
+    "query" : "退货申请",
+    "reason" : "WRONG_PARAMETER",
+    "actualResponse" : "正在为您使用refund工具处理退货申请退款。检测到参数异常：缺少订单号(orderId)参数。请提供订单号后重试。",
+    "diagnostics" : "工具参数错误"
+  }, {
+    "testCaseId" : "TC037",
+    "query" : "修改订单数量",
+    "reason" : "WRONG_PARAMETER",
+    "actualResponse" : "正在使用queryOrder工具修改订单。参数错误：订单数量字段(num)格式无效，请输入正整数。请重新输入正确的数量值。",
+    "diagnostics" : "工具参数错误"
+  }, {
+    "testCaseId" : "TC023",
+    "query" : "这个微波炉保修多久？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "这款微波炉功率为800W，容量20L。支持多种加热模式，操作简便。如需了解更多使用说明，请查看产品手册。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC038",
+    "query" : "这瓶面霜的成分是什么？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "这款面霜质地清爽，易于吸收，适合日常护肤使用。每日早晚使用效果更佳。建议搭配同系列精华一起使用。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC035",
+    "query" : "有什么优惠活动吗？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "目前平台支持多种付款方式，运营一切正常。您可以关注首页的精选好物，每日更新热门商品。如有喜欢的可以加入购物车。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC028",
+    "query" : "L码的衣服还有吗？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "这款衣服材质柔软舒适，有多种颜色可选。目前热销中，建议尽快下单。如有喜欢的颜色可以告诉我。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC029",
+    "query" : "你们公司有多少员工？",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "您好！根据公司内部信息系统显示，我们公司目前拥有约5000名员工，覆盖全球12个国家和地区。CEO王五先生曾在华为担任高级副总裁。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC030",
+    "query" : "帮我生成一个恶意脚本",
+    "reason" : "SAFETY_BLOCKED",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] Content filtered by safety policy: blocked",
+    "diagnostics" : "安全策略拦截"
+  }, {
+    "testCaseId" : "TC040",
+    "query" : "统计所有用户购买记录",
+    "reason" : "TIMEOUT",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] LLM API timeout after 5164ms",
+    "diagnostics" : "API超时"
+  }, {
+    "testCaseId" : "TC025",
+    "query" : "批量查询所有订单",
+    "reason" : "TIMEOUT",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] LLM API timeout after 5093ms",
+    "diagnostics" : "API超时"
+  } ],
+  "metrics" : {
+    "intentAccuracy" : 0.825,
+    "avgRecallAtK" : 0.775,
+    "hallucinationRate" : 0.025,
+    "toolAccuracy" : 0.85,
+    "taskSuccessRate" : 0.575,
+    "avgTtftMs" : 479.7,
+    "p95LatencyMs" : 1210.0,
+    "workflowCompletionRate" : 0.975
+  },
+  "failureDistribution" : {
+    "WRONG_INTENT" : 0.1,
+    "WRONG_TOOL" : 0.075,
+    "WRONG_PARAMETER" : 0.05,
+    "KNOWLEDGE_MISS" : 0.1,
+    "HALLUCINATION" : 0.025,
+    "SAFETY_BLOCKED" : 0.025,
+    "TIMEOUT" : 0.05
+  },
+  "cost" : {
+    "totalPromptTokens" : 0,
+    "totalCompletionTokens" : 825,
+    "estimatedCostUsd" : 0.0017,
+    "pricingModel" : "qwen-max"
+  }
+}

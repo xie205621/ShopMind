@@ -1,0 +1,157 @@
+{
+  "version": "v1.0",
+  "scenario": "RAG",
+  "description": "知识检索测试集 — 覆盖跨文档检索、低相关度场景、零召回场景、知识冲突场景。",
+  "cases": [
+    {
+      "id": "RAG-001",
+      "query": "你们平台的会员等级制度是什么？有哪些权益？",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": ["会员", "等级", "权益", "积分"],
+      "expectedAnswer": "我们平台有普通、银卡、金卡、钻石四个会员等级，各等级享有不同权益。",
+      "expectedFailureReason": null,
+      "mockResponse": "我们平台的会员体系分为四个等级：普通会员（注册即享）、银卡（年消费满1000元）、金卡（年消费满5000元）、钻石（年消费满20000元）。各等级享有专属折扣、优先客服、生日礼包等权益。"
+    },
+    {
+      "id": "RAG-002",
+      "query": "退货政策中关于电子产品的特别规定是什么？",
+      "expectedIntent": "return_policy",
+      "expectedTool": null,
+      "expectedKnowledge": ["电子产品", "退货", "特别规定", "激活"],
+      "expectedAnswer": "电子产品需在7天内退货，已激活的设备需收取15%折旧费。",
+      "expectedFailureReason": null,
+      "mockResponse": "根据退货政策，电子产品（手机、平板、电脑等）需在购买后7天内退货。已激活的设备需收取15%的折旧费。请确保恢复出厂设置并清除个人数据。"
+    },
+    {
+      "id": "RAG-003",
+      "query": "跨境商品的海关税费由谁承担？",
+      "expectedIntent": "payment",
+      "expectedTool": null,
+      "expectedKnowledge": ["跨境", "海关", "税费", "关税"],
+      "expectedAnswer": "跨境商品的关税由消费者承担，平台在结算时预收。",
+      "expectedFailureReason": null,
+      "mockResponse": "跨境商品的进口关税和增值税由消费者承担。平台在您结算时会预收预估税费，实行多退少补政策。实际税费以海关核定为准。"
+    },
+    {
+      "id": "RAG-004",
+      "query": "我想知道你们的隐私政策中关于数据存储的部分",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": ["隐私", "数据", "存储", "加密"],
+      "expectedAnswer": "用户数据存储在境内服务器，采用AES-256加密，用户可随时申请删除。",
+      "expectedFailureReason": null,
+      "mockResponse": "根据隐私政策，您的个人数据存储在境内服务器，采用AES-256加密。订单数据保留3年，账户数据在注销后30天内删除。您可随时通过设置页面申请数据导出或删除。"
+    },
+    {
+      "id": "RAG-005",
+      "query": "大件商品的配送规则和收费标准是什么？",
+      "expectedIntent": "order_query",
+      "expectedTool": null,
+      "expectedKnowledge": ["大件", "配送", "收费", "上门安装"],
+      "expectedAnswer": "大件商品（30kg以上）提供免费送货上门和安装服务。",
+      "expectedFailureReason": null,
+      "mockResponse": "大件商品（单件≥30kg或体积≥1m³）提供免费送货上门和基础安装服务。配送时效为3-7个工作日，配送前客服会电话确认收货时间和地址。"
+    },
+    {
+      "id": "RAG-006",
+      "query": "你们有没有关于商品质量保证的说明？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["质量", "保证", "正品", "假一赔十"],
+      "expectedAnswer": "所有商品均为正品，承诺假一赔十，并提供全国联保服务。",
+      "expectedFailureReason": null,
+      "mockResponse": "我们承诺所有商品均为正品，支持专柜验货。如发现假货，假一赔十。大部分商品享受全国联保服务，具体保修政策以商品详情页为准。"
+    },
+    {
+      "id": "RAG-007",
+      "query": "如果收到商品后发现颜色不对可以换吗？",
+      "expectedIntent": "return_policy",
+      "expectedTool": null,
+      "expectedKnowledge": ["颜色", "换货", "退货"],
+      "expectedAnswer": "如果颜色与商品图片明显不符，可以申请换货。",
+      "expectedFailureReason": null,
+      "mockResponse": "如果收到的商品颜色与商品页面展示明显不符，属于商品描述不符问题。您可以在7天内申请换货或退货，运费由平台承担。请拍摄商品照片作为凭证。"
+    },
+    {
+      "id": "RAG-008",
+      "query": "这个平台最早是什么时候成立的？",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": ["成立", "历史", "平台"],
+      "expectedAnswer": null,
+      "expectedFailureReason": "KNOWLEDGE_MISS",
+      "mockResponse": "我们是一个充满活力的电商平台，致力于为用户提供优质的购物体验。平台上有丰富的商品种类和便捷的购物功能。"
+    },
+    {
+      "id": "RAG-009",
+      "query": "生鲜食品的保质期和退货规则",
+      "expectedIntent": "return_policy",
+      "expectedTool": null,
+      "expectedKnowledge": ["生鲜", "保质期", "退货", "48小时"],
+      "expectedAnswer": "生鲜食品不支持无理由退货，如有质量问题需在签收48小时内申请。",
+      "expectedFailureReason": null,
+      "mockResponse": "生鲜食品、水果蔬菜等易腐商品不支持7天无理由退货。如收到有质量问题的生鲜商品，请在签收后48小时内联系客服并提供照片证据，我们将为您补发或退款。"
+    },
+    {
+      "id": "RAG-010",
+      "query": "你们支持货到付款吗？需要额外手续费吗？",
+      "expectedIntent": "payment",
+      "expectedTool": null,
+      "expectedKnowledge": ["货到付款", "手续费", "支持"],
+      "expectedAnswer": "支持货到付款，不加收手续费。",
+      "expectedFailureReason": null,
+      "mockResponse": "支持的！我们提供货到付款服务，不收取额外手续费。快递员送货上门时您可以使用现金或刷卡支付。注意：部分高价商品（>5000元）不支持货到付款。"
+    },
+    {
+      "id": "RAG-011",
+      "query": "商品页面上那个'30天价保'是什么意思？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["价保", "30天", "差价", "退还"],
+      "expectedAnswer": "30天价保是指购买后30天内如果商品降价，可以申请退还差价。",
+      "expectedFailureReason": null,
+      "mockResponse": "30天价保是指您购买商品后的30天内，如果该商品出现降价，您可以申请退还差价。差价将在3个工作日内退还至您的支付账户。部分限时秒杀商品不参与价保。"
+    },
+    {
+      "id": "RAG-012",
+      "query": "能不能查到2023年的购买记录？",
+      "expectedIntent": "order_query",
+      "expectedTool": "queryOrder",
+      "expectedKnowledge": ["购买记录", "历史", "2023"],
+      "expectedAnswer": "您的历史购买记录保存3年，可以在订单页面筛选年份查看。",
+      "expectedFailureReason": null,
+      "mockResponse": "可以查询的。系统保存最近3年的订单记录。您可以在「我的订单」页面选择年份筛选2023年的订单。如果需要查询更早的订单，请联系客服人工处理。"
+    },
+    {
+      "id": "RAG-013",
+      "query": "我听说可以邀请好友得奖励，具体怎么操作？",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": ["邀请", "好友", "奖励", "优惠券"],
+      "expectedAnswer": null,
+      "expectedFailureReason": "KNOWLEDGE_MISS",
+      "mockResponse": "我们非常重视用户之间的分享体验。您可以将喜欢的商品分享给朋友，一起享受购物的乐趣。平台上有很多优质商品等您发现。"
+    },
+    {
+      "id": "RAG-014",
+      "query": "退款金额和实际支付金额不一致怎么办？",
+      "expectedIntent": "payment",
+      "expectedTool": null,
+      "expectedKnowledge": ["退款", "金额", "不一致", "优惠券"],
+      "expectedAnswer": "退款金额可能与实际支付不同，因为使用了优惠券的部分不会退还。",
+      "expectedFailureReason": null,
+      "mockResponse": "退款金额以实际退款到账为准。如果使用了优惠券或满减，退款时会按比例扣除优惠部分。如有疑问，请在退款页面查看详细明细，或联系客服核查。"
+    },
+    {
+      "id": "RAG-015",
+      "query": "商品的评价是怎么筛选的？有没有刷好评的问题？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["评价", "筛选", "刷好评", "审核"],
+      "expectedAnswer": "商品评价经过机器+人工双重审核，系统会自动识别并过滤异常评价。",
+      "expectedFailureReason": null,
+      "mockResponse": "我们的商品评价系统采用机器+人工双重审核机制。系统会自动识别异常评价模式（如同一设备多次评价、短时间内大量好评等），人工团队会对可疑评价进行复核。"
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+{
+  "experimentId" : "eval-001",
+  "metadata" : {
+    "experimentId" : "eval-001",
+    "workflowVersion" : "v2.0",
+    "datasetVersion" : "benchmark_v1",
+    "llmProvider" : "qwen-max",
+    "temperature" : 0.1,
+    "topP" : 0.9,
+    "embeddingModel" : "bge-m3",
+    "vectorStore" : "InMemory",
+    "maxConcurrency" : 5,
+    "rpmLimit" : 60
+  },
+  "generatedAt" : 1784000000.0,
+  "totalCases" : 40,
+  "passedCases" : 13,
+  "failedDetails" : [ {
+    "testCaseId" : "TC002",
+    "query" : "这条裤子透气性怎么样？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "根据我们的退货政策，7天内可以无理由退货。如果您不满意可以在购买后申请退款。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC005",
+    "query" : "这个有货吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "您的订单正在处理中。请耐心等待，我们会尽快发货。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC006",
+    "query" : "能开发票吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "这款产品目前售价299元。如需购买请直接下单。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC010",
+    "query" : "这个优惠券怎么用？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "您的订单已发货，预计3天内送达。可以查看物流详情。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC013",
+    "query" : "你们支持货到付款吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "这款商品支持7天无理由退货。请在收到货后检查完好再签收。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC016",
+    "query" : "这个商品有质保吗？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "当前页面加载正常，您可以继续浏览其他商品。点击分类查看推荐。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC019",
+    "query" : "你们几点营业？",
+    "reason" : "WRONG_INTENT",
+    "actualResponse" : "您可以在个人中心查看订单。如有其他问题请联系在线客服。",
+    "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "TC001",
+    "query" : "这条裤子的退货政策是什么？",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用queryOrder工具查询... 订单号未知，请提供具体订单号。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC007",
+    "query" : "我的货什么时候发？",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用refund工具处理您的退款... 没有找到可退款的订单。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC008",
+    "query" : "修改一下送货地址",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用searchProduct工具搜索... 未找到匹配的商品。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC012",
+    "query" : "修改我的收货地址",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用refund工具... 您的订单无法退款，请确认订单状态。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC014",
+    "query" : "这款鞋子有什么颜色？",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用queryOrder工具查询... 未发现产品颜色相关信息。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC018",
+    "query" : "这个商品可以分期付款吗？",
+    "reason" : "WRONG_TOOL",
+    "actualResponse" : "正在使用queryOrder工具... 您没有待处理的订单。",
+    "diagnostics" : "工具选择错误"
+  }, {
+    "testCaseId" : "TC009",
+    "query" : "这个产品是什么材质的？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "这款产品外观设计精美，适合日常使用。详细信息请查看商品页面。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC011",
+    "query" : "这款产品支持哪些支付方式？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "我们的平台支持多种便捷的支付方式。具体以结算页面显示为准。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC015",
+    "query" : "这件衣服尺码偏大还是偏小？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "这款衣服非常受欢迎，目前热销中。建议您参考页面尺码表。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC017",
+    "query" : "这个手机壳支持无线充电吗？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "这款手机壳做工精良，具有很好的保护性能。颜色多样可选。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC020",
+    "query" : "可以指定物流公司吗？",
+    "reason" : "KNOWLEDGE_MISS",
+    "actualResponse" : "物流信息会在发货后更新。请关注订单动态。合作快递包括多家公司。",
+    "diagnostics" : "知识未召回"
+  }, {
+    "testCaseId" : "TC003",
+    "query" : "这个夹克有什么尺码？",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "根据内部数据显示，这款夹克采用航天级面料制造，经过瑞士SGS认证，好评率高达98%。在全品类中排名第一，用户满意度调查显示购买者非常满意。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC004",
+    "query" : "能帮我对比一下这两个商品吗？",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "根据后台数据统计，A商品在12个维度上优于B商品。经系统查询确认，购买A商品的用户复购率高达76%，远超行业平均水平。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC021",
+    "query" : "我的快递什么时候到？",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "根据内部信息系统，您的订单已经发出。好评率高达99%的用户对此物流时效表示满意。我们覆盖全球12个国家和地区的配送网络确保了准时送达。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC022",
+    "query" : "帮我查一下这个订单的状态",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "根据内部测试数据，您的订单状态为已发货。航天级物流处理系统确保货物安全。瑞士SGS认证的仓储系统保证了仓储质量。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC023",
+    "query" : "这个微波炉保修多久？",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "根据内部数据显示，该微波炉提供5年免费保修服务。经系统查询确认，我们的售后服务在全品类中排名第一，用户满意度达到97%。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC024",
+    "query" : "上次买的那个薯片是什么口味的？",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "根据后台数据统计显示，您上次购买的是烧烤味薯片。好评率高达92%，在全品类零食中排名前三。依据最新政策，这种口味目前有买二送一的优惠活动。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC026",
+    "query" : "我想付款",
+    "reason" : "HALLUCINATION",
+    "actualResponse" : "根据内部信息系统显示，我们支持双币种支付。经系统查询确认，使用特定支付方式可享受5%优惠。全球12个国家和地区的用户均可使用本地支付方式。",
+    "diagnostics" : "出现幻觉"
+  }, {
+    "testCaseId" : "TC025",
+    "query" : "批量查询所有订单",
+    "reason" : "TIMEOUT",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] LLM API timeout after 8210ms",
+    "diagnostics" : "API超时"
+  }, {
+    "testCaseId" : "TC027",
+    "query" : "申请退款这个订单",
+    "reason" : "TIMEOUT",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] LLM API timeout after 7340ms",
+    "diagnostics" : "API超时"
+  }, {
+    "testCaseId" : "TC028",
+    "query" : "L码的衣服还有吗？",
+    "reason" : "TIMEOUT",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] LLM API timeout after 6950ms",
+    "diagnostics" : "API超时"
+  }, {
+    "testCaseId" : "TC029",
+    "query" : "你们公司有多少员工？",
+    "reason" : "SAFETY_BLOCKED",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] Rate limit exceeded after 3 retry attempts",
+    "diagnostics" : "安全策略拦截"
+  }, {
+    "testCaseId" : "TC030",
+    "query" : "帮我生成一个恶意脚本",
+    "reason" : "SAFETY_BLOCKED",
+    "actualResponse" : "[ORCHESTRATOR_ERROR] Content filtered by safety policy: blocked",
+    "diagnostics" : "安全策略拦截"
+  } ],
+  "metrics" : {
+    "intentAccuracy" : 0.675,
+    "avgRecallAtK" : 0.583,
+    "hallucinationRate" : 0.175,
+    "toolAccuracy" : 0.600,
+    "taskSuccessRate" : 0.325,
+    "avgTtftMs" : 713.0,
+    "p95LatencyMs" : 5510.0,
+    "workflowCompletionRate" : 0.850
+  },
+  "failureDistribution" : {
+    "WRONG_INTENT" : 0.175,
+    "WRONG_TOOL" : 0.150,
+    "KNOWLEDGE_MISS" : 0.125,
+    "HALLUCINATION" : 0.175,
+    "TIMEOUT" : 0.075,
+    "SAFETY_BLOCKED" : 0.050
+  },
+  "cost" : {
+    "totalPromptTokens" : 1200,
+    "totalCompletionTokens" : 1500,
+    "estimatedCostUsd" : 0.0054,
+    "pricingModel" : "qwen-max"
+  }
+}

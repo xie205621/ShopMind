@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: shopmind-enterprise
+
+  data:
+    mongodb:
+      # 生产环境由环境变量覆盖此 URI
+      uri: ${MONGODB_URI:mongodb://localhost:27017/shopmind}
+
+shopmind:
+  memory:
+    # 滑动窗口大小（Session_Memory.md §3: 默认 20 条）
+    max-messages: 20
+  knowledge:
+    cache:
+      max-size: 1000
+      ttl-minutes: 30
+  mcp:
+    timeout-ms: 3000
+  llm:
+    qwen:
+      # 通过环境变量 QWEN_API_KEY 注入，或直接替换此处
+      api-key: ${QWEN_API_KEY:}
+      # 对话模型：qwen-max / qwen-plus / qwen-turbo
+      chat-model: ${QWEN_CHAT_MODEL:qwen-plus}
+      # Embedding 模型
+      embedding-model: ${QWEN_EMBEDDING_MODEL:text-embedding-v3}
+
+    deepseek:
+      # 通过环境变量 DEEPSEEK_API_KEY 注入
+      api-key: ${DEEPSEEK_API_KEY:}
+      # 对话模型：deepseek-chat / deepseek-reasoner
+      chat-model: ${DEEPSEEK_CHAT_MODEL:deepseek-v4-flash}
+
+  orchestrator:
+    max-iterations: 3
+
+# Resilience4j (§6 熔断降级 + §7 评测限流)
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+    instances:
+      llmProvider:
+        base-config: default
+        sliding-window-size: 5
+        wait-duration-in-open-state: 15s
+
+  # v2.1: Evaluation Engine 评测限流（Token Bucket，防 LLM 厂商 HTTP 429）
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 30
+        limit-refresh-period: 1m
+        timeout-duration: 60s
+    instances:
+      llmRateLimiter:
+        base-config: default
+        limit-for-period: 30
+        limit-refresh-period: 1m
+
+logging:
+  level:
+    com.shopmind.memory: DEBUG

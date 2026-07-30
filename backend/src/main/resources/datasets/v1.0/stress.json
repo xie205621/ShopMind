@@ -1,0 +1,107 @@
+{
+  "version": "v1.0",
+  "scenario": "STRESS",
+  "description": "压力与鲁棒性测试集 — 覆盖超长输入、高 Token 消耗、边界条件等场景。",
+  "cases": [
+    {
+      "id": "STRESS-001",
+      "query": "我有一个非常详细的需求：我要找一款手机，要求处理器是骁龙8 Gen3或以上，内存至少12GB，存储至少256GB，屏幕要AMOLED材质支持120Hz刷新率，电池容量不低于5000mAh，支持67W以上快充，支持NFC和红外遥控，有IP68防水，重量不超过200g，价格在3000-5000元之间，颜色要有白色版本，摄像头要有光学防抖和至少3倍光学变焦。有符合这些条件的吗？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["手机", "骁龙", "12GB", "AMOLED"],
+      "expectedAnswer": "根据您详细的条件筛选，推荐小米14 Pro和iQOO 12 Pro。",
+      "expectedFailureReason": null,
+      "mockResponse": "根据您的详细需求，为您筛选到两款符合大部分条件的手机：小米14 Pro（骁龙8 Gen3/12GB/256GB/AMOLED 120Hz/4880mAh/120W快充/IP68/223g）和iQOO 12 Pro。建议您对比后进行选择。"
+    },
+    {
+      "id": "STRESS-002",
+      "query": "帮我对比一下这三个订单的状态：ORD2024001、ORD2024002、ORD2024003，每个都要查一下物流和预计送达时间，然后告诉我哪个会最先到。",
+      "expectedIntent": "order_query",
+      "expectedTool": "queryOrder",
+      "expectedKnowledge": ["订单", "物流", "送达"],
+      "expectedAnswer": "ORD2024001预计明天到达，ORD2024002后天，ORD2024003已签收。",
+      "expectedFailureReason": null,
+      "mockResponse": "正在逐一查询三个订单... ORD2024001：运输中，预计明天到达。ORD2024002：已出库，预计后天到达。ORD2024003：已签收。最先到达的是ORD2024001。"
+    },
+    {
+      "id": "STRESS-003",
+      "query": "我需要退货一个订单但同时下单一个新的，然后旧的退款用来支付新的订单的一部分，剩下用花呗，花呗要做6期分期，新订单要开发票，发票抬头是XX科技有限公司，税号是91110000XXXXXXXXXX，收货地址和上次不一样，要改成新的地址，另外我还有一个优惠券快过期了，帮我看看能不能用在这个新订单上。",
+      "expectedIntent": "return_policy",
+      "expectedTool": "refund",
+      "expectedKnowledge": ["退货", "退款", "发票", "优惠券"],
+      "expectedAnswer": null,
+      "expectedFailureReason": "WRONG_PARAMETER",
+      "mockResponse": "正在使用refund工具处理退货退款... 参数异常：步骤过多，请逐一说明。建议先提供旧订单号进行退款，再下新订单。"
+    },
+    {
+      "id": "STRESS-004",
+      "query": "",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "WRONG_INTENT",
+      "mockResponse": "您好！您似乎没有输入任何内容。请问有什么可以帮助您的？"
+    },
+    {
+      "id": "STRESS-005",
+      "query": "[STRESS: 2000个A的超长输入,用于测试TIMEOUT]",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "TIMEOUT",
+      "mockResponse": null
+    },
+    {
+      "id": "STRESS-006",
+      "query": "查询一下我的订单，订单号是___，查询完了之后再退款，退款完了之后再重新下单，下单完了之后再修改地址，地址修改完了之后再开发票，发票开完了之后再查物流。",
+      "expectedIntent": "order_query",
+      "expectedTool": "queryOrder",
+      "expectedKnowledge": ["订单", "退款", "发票", "物流"],
+      "expectedAnswer": "请先提供有效的订单号，我会按步骤为您处理。",
+      "expectedFailureReason": null,
+      "mockResponse": "好的，我理解您需要执行多个操作。请先提供有效的订单号，我将按以下顺序处理：1.查询订单 2.退款 3.重新下单 4.修改地址 5.开发票 6.查物流。"
+    },
+    {
+      "id": "STRESS-007",
+      "query": "有没有一个东西，它既不是电子产品也不是衣服也不是食品也不是日用品，反正就是我想要一个礼物但是不知道送什么，你有什么建议吗？",
+      "expectedIntent": "product_info",
+      "expectedTool": null,
+      "expectedKnowledge": ["礼品", "推荐", "礼物"],
+      "expectedAnswer": "为您推荐几款创意礼品：定制相册、香薰蜡烛礼盒、手写书法作品等。",
+      "expectedFailureReason": null,
+      "mockResponse": "理解您的困惑！为您推荐几款独特的礼品选择：定制相册（个性化纪念）、香薰蜡烛礼盒（¥199-399）、手工艺品摆件、或者品牌礼品卡。这些都属于非传统分类的创意礼品。"
+    },
+    {
+      "id": "STRESS-008",
+      "query": "我想退一个2个月前买的已经洗过的衣服因为颜色不太喜欢了",
+      "expectedIntent": "return_policy",
+      "expectedTool": null,
+      "expectedKnowledge": ["退货", "洗涤", "2个月"],
+      "expectedAnswer": "已洗涤且超过7天的商品不支持退货。",
+      "expectedFailureReason": null,
+      "mockResponse": "抱歉，根据退货政策，已洗涤的商品不支持退货。且7天无理由退货期已过。建议您下次购买前仔细查看颜色和尺码信息。"
+    },
+    {
+      "id": "STRESS-009",
+      "query": "¥€$%^&*()_+-=[]{}|;':\",./<>?",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "WRONG_INTENT",
+      "mockResponse": "您好！您的输入似乎包含大量特殊字符。如果您有购物问题，请使用自然语言描述。"
+    },
+    {
+      "id": "STRESS-010",
+      "query": "好，可以，行，嗯，对，是的，就这样，ok",
+      "expectedIntent": "greeting",
+      "expectedTool": null,
+      "expectedKnowledge": [],
+      "expectedAnswer": null,
+      "expectedFailureReason": "WRONG_INTENT",
+      "mockResponse": "好的！如果您确认了之前的操作，我会继续处理。如果还有任何需要调整的地方，请随时告诉我。"
+    }
+  ]
+}
