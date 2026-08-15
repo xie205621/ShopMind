@@ -33,9 +33,10 @@ class McpEngineTest {
     @DisplayName("启动测试：Spring Boot 启动时 ToolRegistry 正确扫描 @McpTool 注解")
     void shouldScanMcpToolAnnotationsOnStartup() {
         List<ToolSpecification> tools = mcpEngine.discoverTools();
-        assertThat(tools).hasSize(4); // searchProduct + confirmPayment + queryOrder + slowTask
+        // 生产工具 4 个（queryOrder/refund/queryPoints/queryCoupons）+ 测试 Mock 工具 4 个
+        assertThat(tools).hasSize(8);
 
-        assertThat(registry.getToolCount()).isEqualTo(4);
+        assertThat(registry.getToolCount()).isEqualTo(8);
     }
 
     @Test
@@ -43,8 +44,13 @@ class McpEngineTest {
     void shouldRegisterCorrectToolNames() {
         assertThat(registry.getTool("searchProduct")).isNotNull();
         assertThat(registry.getTool("confirmPayment")).isNotNull();
-        assertThat(registry.getTool("queryOrder")).isNotNull();
+        assertThat(registry.getTool("mockQueryOrder")).isNotNull();
         assertThat(registry.getTool("slowTask")).isNotNull();
+        // 生产真实业务工具
+        assertThat(registry.getTool("queryOrder")).isNotNull();
+        assertThat(registry.getTool("refund")).isNotNull();
+        assertThat(registry.getTool("queryPoints")).isNotNull();
+        assertThat(registry.getTool("queryCoupons")).isNotNull();
     }
 
     @Test
@@ -75,7 +81,7 @@ class McpEngineTest {
     @Test
     @DisplayName("正常调用：无参 Tool 正确返回结果")
     void shouldExecuteSimpleTool() {
-        String result = mcpEngine.executeTool("queryOrder",
+        String result = mcpEngine.executeTool("mockQueryOrder",
                 "{\"orderNo\": \"202401010000001001\"}");
         assertThat(result).contains("已发货");
         assertThat(result).contains("SF1234567890");
@@ -172,6 +178,7 @@ class McpEngineTest {
                 .toList();
 
         assertThat(toolNames).containsExactlyInAnyOrder(
-                "searchProduct", "confirmPayment", "queryOrder", "slowTask");
+                "searchProduct", "confirmPayment", "mockQueryOrder", "slowTask",
+                "queryOrder", "refund", "queryPoints", "queryCoupons");
     }
 }

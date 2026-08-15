@@ -1,0 +1,152 @@
+[
+  {
+    "id": "aftersales_001",
+    "text": "退货政策：自签收之日起7天内可无理由退货，15天内可换货。退货商品需保持完好、配件齐全，退货包运费。",
+    "metadata": { "source": "售后政策手册.md", "category": "售后", "section": "退货规则" }
+  },
+  {
+    "id": "aftersales_002",
+    "text": "换货政策：商品存在质量问题，可在签收后15天内申请换货，换货产生的来回运费由商家承担。",
+    "metadata": { "source": "售后政策手册.md", "category": "售后", "section": "换货规则" }
+  },
+  {
+    "id": "aftersales_003",
+    "text": "退款时效：退款在仓库签收退货商品并质检通过后，3个工作日内原路退回。",
+    "metadata": { "source": "售后政策手册.md", "category": "售后", "section": "退款时效" }
+  },
+  {
+    "id": "aftersales_004",
+    "text": "质量问题退货：若商品存在质量问题，商家承担来回运费；非质量问题退货，运费由买家承担。",
+    "metadata": { "source": "售后政策手册.md", "category": "售后", "section": "运费规则" }
+  },
+  {
+    "id": "aftersales_005",
+    "text": "退货流程：在APP中申请退货 → 选择退货原因 → 等待审核（1个工作日内）→ 自行寄回或预约上门取件。",
+    "metadata": { "source": "售后政策手册.md", "category": "售后", "section": "退货流程" }
+  },
+  {
+    "id": "logistics_001",
+    "text": "物流配送：全国包邮（港澳台及偏远地区除外）。标准配送时效为3-5个工作日。",
+    "metadata": { "source": "物流政策.md", "category": "物流", "section": "配送时效" }
+  },
+  {
+    "id": "logistics_002",
+    "text": "顺丰加急配送时效为1-2个工作日，需额外支付加急运费。",
+    "metadata": { "source": "物流政策.md", "category": "物流", "section": "加急配送" }
+  },
+  {
+    "id": "logistics_003",
+    "text": "物流查询：订单发货后可在APP「我的订单」中查看物流单号与实时轨迹。",
+    "metadata": { "source": "物流政策.md", "category": "物流", "section": "物流查询" }
+  },
+  {
+    "id": "logistics_004",
+    "text": "偏远地区（新疆、西藏、内蒙古等）配送时效为5-8个工作日，部分商品可能不包邮。",
+    "metadata": { "source": "物流政策.md", "category": "物流", "section": "偏远地区" }
+  },
+  {
+    "id": "logistics_005",
+    "text": "签收提醒：请在签收时核对商品外观，如有破损可当场拒收并联系客服。",
+    "metadata": { "source": "物流政策.md", "category": "物流", "section": "签收规则" }
+  },
+  {
+    "id": "payment_001",
+    "text": "支付方式：支持微信支付、支付宝、银联云闪付、信用卡分期。单笔订单最高支付限额为50000元。",
+    "metadata": { "source": "支付政策.md", "category": "支付", "section": "支付方式" }
+  },
+  {
+    "id": "payment_002",
+    "text": "分期付款：支持3/6/12期分期，分期手续费由平台与银行共同决定。",
+    "metadata": { "source": "支付政策.md", "category": "支付", "section": "分期付款" }
+  },
+  {
+    "id": "payment_003",
+    "text": "支付失败处理：若支付失败，请确认银行卡余额或更换支付方式后重试，款项不会重复扣费。",
+    "metadata": { "source": "支付政策.md", "category": "支付", "section": "支付失败" }
+  },
+  {
+    "id": "payment_004",
+    "text": "发票说明：默认开具电子普通发票，可在下单时填写抬头；增值税专用发票需联系客服开具。",
+    "metadata": { "source": "支付政策.md", "category": "支付", "section": "发票说明" }
+  },
+  {
+    "id": "promotion_001",
+    "text": "满减活动：全场商品满200减20，满500减60，满1000减150，优惠券可与满减叠加使用。",
+    "metadata": { "source": "营销活动规则.md", "category": "营销", "section": "满减规则" }
+  },
+  {
+    "id": "promotion_002",
+    "text": "优惠券规则：满199减20、满399减50、新人首单减30，优惠券不可叠加使用，每单限用一张。",
+    "metadata": { "source": "营销活动规则.md", "category": "营销", "section": "优惠券" }
+  },
+  {
+    "id": "promotion_003",
+    "text": "活动时间：本次满减活动时间为2024年1月1日至12月31日，特价商品不参与满减。",
+    "metadata": { "source": "营销活动规则.md", "category": "营销", "section": "活动时间" }
+  },
+  {
+    "id": "promotion_004",
+    "text": "会员积分规则：消费1元累计1积分，积分可在下单时抵扣，100积分抵扣1元。",
+    "metadata": { "source": "会员权益手册.md", "category": "会员", "section": "积分规则" }
+  },
+  {
+    "id": "member_001",
+    "text": "会员等级：普通会员、黄金会员（年消费满3000元）、铂金会员（年消费满10000元）。",
+    "metadata": { "source": "会员权益手册.md", "category": "会员", "section": "会员等级" }
+  },
+  {
+    "id": "member_002",
+    "text": "黄金会员权益：专属客服、生日双倍积分、每月2张免运费券。",
+    "metadata": { "source": "会员权益手册.md", "category": "会员", "section": "黄金会员权益" }
+  },
+  {
+    "id": "member_003",
+    "text": "铂金会员权益：全年免运费、优先退款、专属客服热线、新品优先购。",
+    "metadata": { "source": "会员权益手册.md", "category": "会员", "section": "铂金会员权益" }
+  },
+  {
+    "id": "member_004",
+    "text": "积分有效期：积分自获得之日起24个月内有效，过期自动清零。",
+    "metadata": { "source": "会员权益手册.md", "category": "会员", "section": "积分有效期" }
+  },
+  {
+    "id": "product_001",
+    "text": "商品尺码：请参考商品详情页尺码表，如不确定可联系客服提供身高体重协助选码。",
+    "metadata": { "source": "商品FAQ.md", "category": "商品", "section": "尺码建议" }
+  },
+  {
+    "id": "product_002",
+    "text": "面料说明：多数服装含棉、氨纶等成分，具体以商品详情页标签为准，建议30°C以下水温洗涤。",
+    "metadata": { "source": "商品FAQ.md", "category": "商品", "section": "面料洗护" }
+  },
+  {
+    "id": "product_003",
+    "text": "库存说明：商品页面显示「有货」即可下单，缺货商品可开启到货提醒。",
+    "metadata": { "source": "商品FAQ.md", "category": "商品", "section": "库存" }
+  },
+  {
+    "id": "safety_001",
+    "text": "平台不会以任何理由索要用户支付密码、短信验证码，请勿向他人泄露。",
+    "metadata": { "source": "安全须知.md", "category": "安全", "section": "防诈骗" }
+  },
+  {
+    "id": "safety_002",
+    "text": "账号安全：请勿在公共网络环境下登录账号，建议开启二次验证。",
+    "metadata": { "source": "安全须知.md", "category": "安全", "section": "账号安全" }
+  },
+  {
+    "id": "faq_001",
+    "text": "如何联系人工客服：在APP「我的-联系客服」中发起会话，服务时间为每日9:00-21:00。",
+    "metadata": { "source": "商品FAQ.md", "category": "客服", "section": "人工客服" }
+  },
+  {
+    "id": "faq_002",
+    "text": "订单取消：未发货订单可在APP直接取消，已发货订单需联系客服处理。",
+    "metadata": { "source": "商品FAQ.md", "category": "订单", "section": "订单取消" }
+  },
+  {
+    "id": "faq_003",
+    "text": "修改收货地址：订单发货前可在「订单详情」修改，发货后需联系快递或客服协助。",
+    "metadata": { "source": "商品FAQ.md", "category": "订单", "section": "地址修改" }
+  }
+]

@@ -72,7 +72,7 @@ ShopMind 提出了一种**评估驱动的反应式 AI 智能体平台**。它通
 | **Agent LLM** | deepseek-v4-flash (Temperature=0.1) |
 | **Judge LLM** | deepseek-v4-flash (LLM-as-Judge, Temperature=0.0) |
 | **Embedding** | DashScope text-embedding-v3 |
-| **Knowledge Base** | 80 chunks (商品/售后/物流/会员/支付/FAQ) |
+| **Knowledge Base** | 30 chunks (售后/物流/支付/营销/会员/商品/安全/客服/订单) |
 | **Dataset** | 126 cases × 7 scenarios (v1.0) |
 | **Concurrency** | maxConcurrency=2, RPM=10 (token bucket) |
 | **Memory** | MongoDB sliding window |

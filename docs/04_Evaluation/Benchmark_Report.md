@@ -28,7 +28,7 @@ This document presents the complete evaluation results from the ShopMind Evaluat
 | Judge Method | LLM-as-Judge (deepseek-v4-flash) |
 | Dataset | v1.0 (126 cases) |
 | Concurrency | 2 (RPM: 10) |
-| Knowledge Base | 15 chunks (DashScopeEmbeddingAdapter) |
+| Knowledge Base | 30 chunks (DashScopeEmbeddingAdapter) |
 | Workflows Tested | 8 |
 
 ### Results Matrix
@@ -69,14 +69,14 @@ This document presents the complete evaluation results from the ShopMind Evaluat
 |------|---------------|-------------|-----------|-------------|
 | **Mode A** | None | None | None | Bare LLM — answers from training knowledge only |
 | **Mode B** | Dummy chunks | Enabled | None | Agent with tools but no RAG constraints |
-| **Mode C** | ~80 chunks | Enabled | Full (v2.3) | Complete system with RAG + Guardrails |
+| **Mode C** | 30 chunks | Enabled | Full (v2.3) | Complete system with RAG + Guardrails |
 
 | Parameter | Value |
 |-----------|-------|
 | Agent LLM | `deepseek-v4-flash` |
 | Judge Method | LLM-as-Judge (deepseek-v4-flash) |
 | Dataset | 10 normal + 18 adversarial = 28 cases |
-| Knowledge Base | 80 chunks (商品/售后/物流/会员/支付/FAQ) |
+| Knowledge Base | 30 chunks (售后/物流/支付/营销/会员/商品/安全/客服/订单) |
 | Embedding | DashScopeEmbeddingAdapter |
 
 ### Table 1: Normal Business Scenarios (10 cases)
@@ -104,7 +104,7 @@ This document presents the complete evaluation results from the ShopMind Evaluat
 
 ### Key Conclusions
 
-1. **RAG Knowledge Enhancement:** The 80-chunk knowledge base enables Mode C to achieve higher Task Success on normal business scenarios compared to bare LLM — RAG provides domain-specific business knowledge that the base model lacks.
+1. **RAG Knowledge Enhancement:** The 30-chunk knowledge base enables Mode C to achieve higher Task Success on normal business scenarios compared to bare LLM — RAG provides domain-specific business knowledge that the base model lacks.
 2. **Zero Hallucination Baseline:** All three modes maintain 0% hallucination rate. The base model (deepseek-v4-flash) already exhibits strong safety alignment. Guardrails serve as an explicit, auditable constraint layer that guarantees this behavior.
 3. **Safety-First Boundary:** On adversarial cases, Task Success drops near zero while hallucination stays at 0% — the system correctly refuses to answer rather than fabricating.
 4. **Guardrails as Safety Layer:** Guardrails do NOT improve Task Success — their role is orthogonal: they provide explicit, version-controlled safety constraints. This decoupling of capability (RAG + tools) and safety (Guardrails) is the key architectural insight.
@@ -121,7 +121,7 @@ This document presents the complete evaluation results from the ShopMind Evaluat
 
 | Parameter | Value |
 |-----------|-------|
-| Knowledge Base | 80 chunks |
+| Knowledge Base | 30 chunks |
 | Embedding | DashScopeEmbeddingAdapter |
 | Vector Store | InMemoryVectorStoreAdapter |
 | Test Queries | 10 |
@@ -134,7 +134,7 @@ This document presents the complete evaluation results from the ShopMind Evaluat
 | **Hit@1** | **90%** (9/10) |
 | **Hit@3** | **100%** (10/10) |
 
-All 10 test queries correctly retrieved their target knowledge chunk within the top 3 results. The only Hit@1 miss was "家电保修" (appliance warranty), where the general warranty policy chunk ranked first and the specific air conditioner chunk ranked third — a semantically reasonable ordering.
+All 10 test queries correctly retrieved their target knowledge chunk within the top 3 results. The only Hit@1 miss was a query where a general policy chunk ranked first and the more specific chunk ranked third — a semantically reasonable ordering.
 
 **Key Finding:** The DashScope text-embedding-v3 model + InMemory vector store achieves 90% Hit@1 and 100% Hit@3 on domain-specific queries, confirming the retrieval layer is reliable enough to support RAG-augmented generation.
 

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -32,7 +33,10 @@ public class InMemoryVectorStoreAdapter implements VectorStorePort {
     /**
      * LangChain4j 内嵌向量存储 — 常驻内存，基于余弦相似度搜索。
      */
-    private final EmbeddingStore<TextSegment> embeddingStore;
+    private volatile EmbeddingStore<TextSegment> embeddingStore;
+
+    /** 当前已存储向量总数（LangChain4j InMemoryEmbeddingStore 不暴露 size） */
+    private final AtomicInteger sizeCounter = new AtomicInteger(0);
 
     public InMemoryVectorStoreAdapter() {
         this.embeddingStore = new InMemoryEmbeddingStore<>();
@@ -56,21 +60,21 @@ public class InMemoryVectorStoreAdapter implements VectorStorePort {
                 ? TextSegment.from(chunk.getText(), toMetadata(chunk.getMetadata()))
                 : TextSegment.from(chunk.getText());
         embeddingStore.add(embedding, segment);
+        sizeCounter.incrementAndGet();
         log.debug("[Knowledge] Added chunk '{}' to vector store", chunk.getId());
     }
 
     @Override
     public void clear() {
-        // InMemoryEmbeddingStore 没有 clear() 方法，重新创建实例
-        // 这里简化处理：实际上可以通过 reset 或重新赋值
-        log.warn("[Knowledge] InMemory store does not support clear(), "
-                + "re-initialization required for full reset.");
+        // InMemoryEmbeddingStore 没有 clear() 方法，重新创建实例实现清空
+        this.embeddingStore = new InMemoryEmbeddingStore<>();
+        this.sizeCounter.set(0);
+        log.info("[Knowledge] Vector store cleared.");
     }
 
     @Override
     public int size() {
-        // InMemoryEmbeddingStore 没有直接的 size() 方法
-        return -1;
+        return sizeCounter.get();
     }
 
     // ============================================================

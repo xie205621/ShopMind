@@ -1,0 +1,38 @@
+# ===== Maven / Java =====
+backend/target/
+*.class
+*.jar
+*.war
+
+# ===== Frontend (已有 frontend/.gitignore，这里做兜底) =====
+node_modules/
+dist/
+dist-ssr/
+.npm-cache/
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+logs/
+*.log
+
+# ===== Environment =====
+.env
+.env.local
+.env.*.local
+
+# ===== Reports / Figures (生成物) =====
+reports/
+figures/

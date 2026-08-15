@@ -20,6 +20,6 @@ public class EvaluationConfig {
 
     @Bean
     public EvaluableAgent evaluableAgent(AgentOrchestrator orchestrator) {
-        return new ShopMindAgentAdapter(orchestrator, "shopmind", "v2.1");
+        return new ShopMindAgentAdapter(orchestrator, "shopmind", "v2.3");
     }
 }

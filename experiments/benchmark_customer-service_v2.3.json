@@ -13,21 +13,22 @@
     "maxConcurrency" : 5,
     "rpmLimit" : 60
   },
-  "generatedAt" : 1784882103.259003500,
+  "generatedAt" : 1786798496.478792900,
   "totalCases" : 126,
-  "passedCases" : 66,
+  "passedCases" : 64,
+  "safetyRefusalCount" : 3,
   "failedDetails" : [ {
-    "testCaseId" : "EDGE-004",
-    "query" : "退款退款退款退款退款退款退款退款退款退款",
-    "reason" : "WRONG_PARAMETER",
-    "actualResponse" : "我已理解您需要退款。请提供订单号，我将使用refund工具为您处理退款申请。",
-    "diagnostics" : "工具参数错误"
-  }, {
     "testCaseId" : "EDGE-006",
     "query" : "包邮吗",
     "reason" : "WRONG_INTENT",
     "actualResponse" : "满99元即可享受包邮。普通商品运费为10元，大件商品另有标准。您可以在结算页面查看具体运费。",
     "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "EDGE-004",
+    "query" : "退款退款退款退款退款退款退款退款退款退款",
+    "reason" : "WRONG_PARAMETER",
+    "actualResponse" : "我已理解您需要退款。请提供订单号，我将使用refund工具为您处理退款申请。",
+    "diagnostics" : "工具参数错误"
   }, {
     "testCaseId" : "EDGE-005",
     "query" : "你们的衣服质量怎么样？我之前在你们这买了一件衣服感觉很不好穿，但是我朋友说你们家的东西挺好的，所以我想再试一次，但是又怕和上次一样失望，你能给我推荐一下吗？",
@@ -53,6 +54,12 @@
     "actualResponse" : "我理解您想查询中间的订单，但我需要更具体的信息。请在「我的订单」页面查看订单列表，给我具体的订单号或时间范围。",
     "diagnostics" : "工具选择错误"
   }, {
+    "testCaseId" : "MULTI-010",
+    "query" : "他买的是哪一款？",
+    "reason" : "KNOWLEDGE_NOT_FOUND",
+    "actualResponse" : "很抱歉，我没有历史对话记录来判断您之前讨论的是哪一款商品。请重新描述您想了解的商品信息。",
+    "diagnostics" : "知识未找到-正确拒答"
+  }, {
     "testCaseId" : "MULTI-011",
     "query" : "帮我查一下积分，然后告诉我能换什么",
     "reason" : "WRONG_INTENT",
@@ -64,6 +71,12 @@
     "reason" : "WRONG_INTENT",
     "actualResponse" : "JBL Flip 6目前参加满300减30活动，叠加平台优惠券还可再减20元。结算时自动计算最优优惠组合。",
     "diagnostics" : "意图识别错误"
+  }, {
+    "testCaseId" : "MULTI-013",
+    "query" : "把这些都加到购物车",
+    "reason" : "KNOWLEDGE_NOT_FOUND",
+    "actualResponse" : "抱歉，我目前没有直接操作购物车的权限。建议您在商品详情页点击「加入购物车」按钮添加，或使用平台的批量加购功能。",
+    "diagnostics" : "知识未找到-正确拒答"
   }, {
     "testCaseId" : "MULTI-014",
     "query" : "还差多少能升级会员？",
@@ -304,36 +317,25 @@
     "reason" : "WRONG_INTENT",
     "actualResponse" : "好的！如果您确认了之前的操作，我会继续处理。如果还有任何需要调整的地方，请随时告诉我。",
     "diagnostics" : "意图识别错误"
-  }, {
-    "testCaseId" : "TOOL-003",
-    "query" : "先查一下我的订单状态，然后如果可以的话帮我退款",
-    "reason" : "WRONG_PARAMETER",
-    "actualResponse" : "正在使用queryOrder工具查询您的订单... 当前所有订单均已完成。如需退款，请提供具体订单号，我将使用refund工具处理。",
-    "diagnostics" : "工具参数错误"
-  }, {
-    "testCaseId" : "TOOL-006",
-    "query" : "我的会员积分有多少？",
-    "reason" : "WRONG_INTENT",
-    "actualResponse" : "正在使用queryPoints工具查询您的会员积分... 当前积分：1250分，会员等级：金卡。再消费750元即可升级为钻石会员。",
-    "diagnostics" : "意图识别错误"
   } ],
   "metrics" : {
     "intentAccuracy" : 0.7142857142857143,
     "avgRecallAtK" : 0.8571428571428571,
     "hallucinationRate" : 0.007936507936507936,
     "toolAccuracy" : 0.8968253968253969,
-    "taskSuccessRate" : 0.5238095238095238,
-    "avgTtftMs" : 355.3174603174603,
-    "p95LatencyMs" : 1241.0,
+    "taskSuccessRate" : 0.5079365079365079,
+    "avgTtftMs" : 358.13492063492066,
+    "p95LatencyMs" : 1240.0,
     "workflowCompletionRate" : 0.8809523809523809
   },
   "failureDistribution" : {
     "WRONG_INTENT" : 0.14285714285714285,
-    "WRONG_TOOL" : 0.07142857142857142,
+    "WRONG_TOOL" : 0.06349206349206349,
     "WRONG_PARAMETER" : 0.06349206349206349,
     "KNOWLEDGE_MISS" : 0.047619047619047616,
     "HALLUCINATION" : 0.007936507936507936,
     "SAFETY_BLOCKED" : 0.11904761904761904,
+    "KNOWLEDGE_NOT_FOUND" : 0.023809523809523808,
     "TIMEOUT" : 0.023809523809523808
   },
   "cost" : {
@@ -341,5 +343,6 @@
     "totalCompletionTokens" : 2508,
     "estimatedCostUsd" : 0.005,
     "pricingModel" : "qwen-max"
-  }
+  },
+  "safetyRefusalRate" : 0.023809523809523808
 }

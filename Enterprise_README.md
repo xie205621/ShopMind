@@ -215,9 +215,15 @@ mvn test -Dtest="RealLlmBenchmarkTest#evaluateRagRetrieval" \
     -Dspring.profiles.active=deepseek \
     -Dshopmind.llm.qwen.api-key=sk-xxx
 
-# 4. 启动开发服务器
+# 4. 启动后端（默认 Mock LLM + 30 chunks 知识库 + 4 个真实 MCP 工具）
 mvn spring-boot:run
-# 访问 http://localhost:8080
+# 对话接口：POST http://localhost:8080/api/chat（SSE）
+
+# 5. 启动前端（Vite 代理 /api → http://localhost:8080）
+cd ../frontend
+npm install
+npm run dev
+# 访问 http://localhost:5173
 ```
 
 ---
@@ -231,7 +237,7 @@ mvn spring-boot:run
 | Test Files | 9 (81 tests) |
 | Workflow Versions | 8 (3 domains) |
 | Dataset Cases | 126 (7 scenarios) |
-| Knowledge Base | 80 chunks |
+| Knowledge Base | 30 chunks |
 | Engine Modules | 6 |
 | Framework Adapters | 3 |
 | Evaluation Methods | 2 |
@@ -247,6 +253,20 @@ mvn spring-boot:run
 | 默认 | Mock | Mock | Rule-Based |
 | `deepseek` | DeepSeek (chat/reasoner) | Mock | LLM-as-Judge (DeepSeek) |
 | `qwen` | Qwen (DashScope) | text-embedding-v3 | (WIP) |
+
+---
+
+## HTTP API & Real Tools
+
+对话通过真实 SSE 接口 `POST /api/chat` 暴露，前端经 Vite 代理 `/api → http://localhost:8080` 直接连接，无 Mock 层。
+
+```bash
+curl -N -X POST http://localhost:8080/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query":"帮我查一下订单 ORD20240722001 的状态"}'
+```
+
+内置 4 个 `@McpTool` 业务工具（启动时由 `ToolRegistry` 自动扫描注册）：`queryOrder`、`refund`、`queryPoints`、`queryCoupons`。工具数据为内存态示例业务数据，可替换为订单/会员服务真实接口。
 
 ---
 

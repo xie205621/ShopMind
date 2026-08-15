@@ -66,6 +66,7 @@ class ShopAgentOrchestratorTest {
         var result = orchestrator.chat(request);
 
         StepVerifier.create(result)
+                .thenConsumeWhile(String::isEmpty)     // 跳过结构化事件映射出的空文本（Intent/Done）
                 .expectNextMatches(t -> !t.isEmpty()) // at least one token
                 .thenConsumeWhile(t -> true)
                 .verifyComplete();

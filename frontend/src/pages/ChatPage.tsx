@@ -12,7 +12,7 @@
 
    Interaction:
      User types → PromptInput.onSend → useSSEChat.sendMessage()
-       → Mock SSE stream → token-by-token → StreamingRenderer
+       → POST /api/chat SSE stream → token-by-token → StreamingRenderer
    ============================================================ */
 
 import { memo, useRef, useEffect, useCallback } from 'react';

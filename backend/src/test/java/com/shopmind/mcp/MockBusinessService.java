@@ -38,8 +38,8 @@ public class MockBusinessService {
     /**
      * 模拟订单查询。
      */
-    @McpTool(name = "queryOrder", description = "根据订单号查询订单状态")
-    public String queryOrder(
+    @McpTool(name = "mockQueryOrder", description = "根据订单号查询订单状态（测试专用，避免与生产 queryOrder 冲突）")
+    public String mockQueryOrder(
             @McpParam(required = true, description = "18位订单编号") String orderNo) {
         return "{\"orderNo\": \"" + orderNo + "\", \"status\": \"已发货\", \"expressNo\": \"SF1234567890\"}";
     }

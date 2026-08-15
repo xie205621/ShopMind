@@ -1,14 +1,12 @@
 /* ============================================================
    useSSEChat — SAD.md §4.1 Chat Flow, §5.2 SSE
    Core hook: manages SSE stream lifecycle, dispatches events to chatStore.
-
-   Phase 1: Mock SSE mode (no backend needed).
-   Phase 2: switch to real POST /api/chat + GET /api/chat/{id}/stream.
+   Connects to the real backend endpoint POST /api/chat (SSE).
    ============================================================ */
 
 import { useCallback, useRef } from 'react';
 import { useChatStore } from '../store/chatStore';
-import { createMockSSEStream } from '../../../infrastructure/api/sseClient';
+import { createSSEReader } from '../../../infrastructure/api/sseClient';
 import type { ChatMessage, SSEEvent } from '../../../shared/types/chat';
 
 let _msgCounter = 0;
@@ -18,6 +16,7 @@ function nextMsgId(): string {
 
 export function useSSEChat() {
   const abortRef = useRef<AbortController | null>(null);
+  const memoryIdRef = useRef<string>(`session_${Date.now()}`);
   const store = useChatStore();
 
   /** Handle a single SSE event — dispatches to the correct store action */
@@ -68,7 +67,7 @@ export function useSSEChat() {
     [store],
   );
 
-  /** Send a user message and start an SSE stream */
+  /** Send a user message and start a real SSE stream */
   const sendMessage = useCallback(
     (query: string) => {
       if (!query.trim() || store.isStreaming) return;
@@ -91,15 +90,20 @@ export function useSSEChat() {
       const aiMsgId = nextMsgId();
       store.createAIMessage(aiMsgId);
 
-      // Start mock SSE stream (Phase 1)
-      const { abortController } = createMockSSEStream(
-        query,
+      // Start real SSE stream (POST /api/chat)
+      const { abortController, connect } = createSSEReader(
         handleEvent,
+        (error) => store.setError(error.message),
         () => {
-          // Stream complete — nothing extra needed (done event handles it)
+          // Stream EOF — the 'done' event already handles completion
         },
       );
       abortRef.current = abortController;
+
+      void connect('/api/chat', {
+        memoryId: memoryIdRef.current,
+        query: query.trim(),
+      });
     },
     [store, handleEvent],
   );

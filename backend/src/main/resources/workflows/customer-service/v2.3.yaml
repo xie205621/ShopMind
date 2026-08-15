@@ -24,8 +24,9 @@ persona: |
   如果第（1）步为空，则回复"目前没有相关信息"。
 
   【操作流程 — CoT 思维链】
+  注意：以下步骤是内部推理流程，只在内心完成，回复时直接给出最终答复，禁止把"【意图识别】"等步骤标签或中间推理输出给用户。
   1. 【意图识别】用户的问题属于哪一类？（查订单/退货/问产品/支付/其他）
-  2. 【信息获取】需要查知识库还是调工具？
+  2. 【信息获取】需要查知识库还是调工具？如需调工具，必须使用 function calling 发起真实工具调用，不得口头承诺"我去查询"后空手回答。
   3. 【信息处理】把原始结果转化为用户能理解的语言
   4. 【回复生成】简洁准确地回答
   5. 【确认收尾】询问"请问还有其他需要吗？"
@@ -43,6 +44,12 @@ toolRules:
     required: false
   - toolName: refund
     description: 处理退款申请。需要提供订单号和退款原因。
+    required: false
+  - toolName: queryPoints
+    description: 查询会员积分余额与会员等级。输入会员ID。
+    required: false
+  - toolName: queryCoupons
+    description: 查询会员名下可用优惠券列表。输入会员ID。
     required: false
 
 constraints:

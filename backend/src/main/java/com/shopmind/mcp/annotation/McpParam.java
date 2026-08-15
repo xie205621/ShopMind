@@ -20,6 +20,12 @@ import java.lang.annotation.Target;
 public @interface McpParam {
 
     /**
+     * 参数名称，向 LLM 暴露的参数键名（JSON 字段名）。
+     * 为空时回退到 Java 反射参数名（需编译参数 -parameters）。
+     */
+    String name() default "";
+
+    /**
      * 是否必填，默认 false。
      * LLM 收到此信息后，会在准备调用时确保传入必填参数。
      */

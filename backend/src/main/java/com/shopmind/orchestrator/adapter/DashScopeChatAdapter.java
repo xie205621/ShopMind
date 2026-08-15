@@ -54,6 +54,9 @@ public class DashScopeChatAdapter implements ChatModelPort {
     private final String apiKey;
     private final String model;
 
+    /** 累积流式 tool_calls 的 name + arguments（跨 SSE chunks 拼接，与 DeepSeek 一致） */
+    private final ThreadLocal<StringBuilder> toolCallAccumulator = ThreadLocal.withInitial(StringBuilder::new);
+
     public DashScopeChatAdapter(
             ObjectMapper objectMapper,
             @Value("${shopmind.llm.qwen.api-key:}") String apiKey,
@@ -92,6 +95,9 @@ public class DashScopeChatAdapter implements ChatModelPort {
         log.debug("[DashScope] Sending chat request: model={}, messages={}, tools={}",
                 model, messages.size(), tools.size());
 
+        // 重置 tool_calls 累加器（跨 SSE chunks 拼接）
+        toolCallAccumulator.get().setLength(0);
+
         return webClient.post()
                 .uri(CHAT_PATH)
                 .header("Authorization", "Bearer " + apiKey)
@@ -104,9 +110,11 @@ public class DashScopeChatAdapter implements ChatModelPort {
                 .onStatus(status -> status.value() == 429, response ->
                         Mono.error(new RuntimeException("DashScope rate limited (429)")))
                 .bodyToFlux(String.class)
-                .filter(line -> line.startsWith("data:"))
-                .map(line -> line.substring(5).strip())
-                .filter(json -> !json.isEmpty() && !"[DONE]".equals(json))
+                .flatMap(chunk -> Flux.fromStream(chunk.lines()))
+                .map(String::strip)
+                .filter(line -> !line.isEmpty())
+                .map(line -> line.startsWith("data:") ? line.substring(5).strip() : line)
+                .filter(json -> !"[DONE]".equals(json))
                 .concatMap(this::extractTokens)
                 .retryWhen(Retry.backoff(2, Duration.ofMillis(500))
                         .filter(t -> t.getMessage() != null && t.getMessage().contains("429")))
@@ -145,10 +153,16 @@ public class DashScopeChatAdapter implements ChatModelPort {
             JsonNode message = choice.get("message");
             if (message == null) return Flux.empty();
 
-            // ---- 工具调用 ----
+            // ---- 工具调用：流式分块返回，name 在首块、arguments 在后续块增量返回，需跨块累积 ----
             JsonNode toolCalls = message.get("tool_calls");
             if (toolCalls != null && toolCalls.isArray() && !toolCalls.isEmpty()) {
-                return parseToolCalls(toolCalls);
+                accumulateToolCalls(toolCalls);
+            }
+
+            // ---- 工具调用完成标志（finish_reason 可能位于 choice 或 output 层级） ----
+            String finishReason = readFinishReason(choice, output);
+            if ("tool_calls".equals(finishReason)) {
+                return flushToolCall();
             }
 
             // ---- 文本内容 ----
@@ -168,19 +182,58 @@ public class DashScopeChatAdapter implements ChatModelPort {
     }
 
     /**
-     * 将 DashScope tool_calls 转换为 ShopMind 的 {@code __TOOL_CALL__} 协议。
+     * 累积流式 tool_calls 的 name + arguments。
+     * <p>
+     * DashScope 流式模式下工具调用是分块返回的：函数名在首个 chunk，
+     * 参数在后续 chunk 中以增量方式返回，需跨 chunk 拼接。
      */
-    private Flux<String> parseToolCalls(JsonNode toolCalls) {
-        List<String> markers = new ArrayList<>();
+    private void accumulateToolCalls(JsonNode toolCalls) {
         for (JsonNode tc : toolCalls) {
             JsonNode function = tc.get("function");
             if (function == null) continue;
-            String name = function.get("name").asText();
-            String args = function.has("arguments") ? function.get("arguments").asText() : "{}";
-            markers.add("\n\n__TOOL_CALL__" + name + args);
+            if (function.has("name") && !function.get("name").isNull()) {
+                toolCallAccumulator.get().append("__NAME__")
+                        .append(function.get("name").asText())
+                        .append("__NAME__");
+            }
+            if (function.has("arguments") && !function.get("arguments").isNull()) {
+                toolCallAccumulator.get().append(function.get("arguments").asText());
+            }
         }
-        log.info("[DashScope] Tool call detected: {}", markers);
-        return Flux.fromIterable(markers);
+    }
+
+    /** 工具调用完成后，将累积的 name + arguments 组合成 {@code __TOOL_CALL__} 标记。 */
+    private Flux<String> flushToolCall() {
+        String accumulated = toolCallAccumulator.get().toString();
+        toolCallAccumulator.get().setLength(0);
+        if (accumulated.isEmpty()) {
+            return Flux.empty();
+        }
+        int nameEnd = accumulated.indexOf("__NAME__", 8);
+        if (nameEnd <= 0) {
+            return Flux.empty();
+        }
+        String toolName = accumulated.substring(8, nameEnd);
+        String jsonArgs = accumulated.substring(nameEnd + 8);
+        if (jsonArgs.isEmpty()) {
+            jsonArgs = "{}";
+        }
+        log.info("[DashScope] Tool call: {} args={}", toolName,
+                jsonArgs.length() > 100 ? jsonArgs.substring(0, 100) + "..." : jsonArgs);
+        return Flux.just("\n\n__TOOL_CALL__" + toolName + jsonArgs);
+    }
+
+    /** 读取 finish_reason（兼容 choice 与 output 两个层级）。 */
+    private String readFinishReason(JsonNode choice, JsonNode output) {
+        if (choice.has("finish_reason") && !choice.get("finish_reason").isNull()) {
+            String fr = choice.get("finish_reason").asText();
+            if (!"null".equals(fr)) return fr;
+        }
+        if (output.has("finish_reason") && !output.get("finish_reason").isNull()) {
+            String fr = output.get("finish_reason").asText();
+            if (!"null".equals(fr)) return fr;
+        }
+        return null;
     }
 
     // ============================================================

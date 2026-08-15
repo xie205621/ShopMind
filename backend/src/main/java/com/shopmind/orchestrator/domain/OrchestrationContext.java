@@ -2,6 +2,7 @@ package com.shopmind.orchestrator.domain;
 
 import com.shopmind.knowledge.model.RetrievedContext;
 import com.shopmind.memory.message.ChatMessage;
+import com.shopmind.orchestrator.port.IntentAnalyzer;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +27,7 @@ public class OrchestrationContext {
     private List<ChatMessage> history;
     private RetrievedContext knowledge;
     private String assembledPrompt;
+    private IntentAnalyzer.IntentResult intent;
     private final ExecutionState state;
 
     public OrchestrationContext(String memoryId, String userMessage) {
@@ -46,6 +48,7 @@ public class OrchestrationContext {
     public List<ChatMessage> getHistory() { return history; }
     public RetrievedContext getKnowledge() { return knowledge; }
     public String getAssembledPrompt() { return assembledPrompt; }
+    public IntentAnalyzer.IntentResult getIntent() { return intent; }
     public ExecutionState getState() { return state; }
 
     // ============================================================
@@ -55,6 +58,7 @@ public class OrchestrationContext {
     public void setHistory(List<ChatMessage> history) { this.history = history; }
     public void setKnowledge(RetrievedContext knowledge) { this.knowledge = knowledge; }
     public void setAssembledPrompt(String assembledPrompt) { this.assembledPrompt = assembledPrompt; }
+    public void setIntent(IntentAnalyzer.IntentResult intent) { this.intent = intent; }
 
     // ============================================================
     //  Convenience

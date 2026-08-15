@@ -141,7 +141,7 @@ Dataset (126 Cases)
 | **Hit@1** | **90%** (9/10) |
 | **Hit@3** | **100%** (10/10) |
 
-> DashScope embedding + 80-chunk 知识库，语义检索覆盖率达 100%。
+> 30-chunk 真实业务知识库 + InMemory 向量检索，Hit@3 覆盖率达 100%。
 
 **详细报告：** `docs/04_Evaluation/Benchmark_Report.md` | 原始数据：`reports/` 目录
 
@@ -209,6 +209,52 @@ Dataset (126 Cases)
 
 ---
 
+## HTTP API (SSE Streaming)
+
+对外暴露一个真实可用的流式对话接口 `POST /api/chat`，以 Server-Sent Events（SSE）返回结构化事件。
+
+**请求体：**
+
+```json
+{ "memoryId": "session_xxx", "query": "帮我查一下订单 ORD20240722001 的状态" }
+```
+
+`memoryId` 可省略，后端会自动生成 `session_<uuid>` 作为会话记忆标识。
+
+**SSE 事件流**（与前端 `SSEEvent` 协议一一对应）：
+
+| 事件 | 含义 |
+|------|------|
+| `intent` | 意图分析结果（类别 / 是否需要知识 / 是否需要工具 / 置信度） |
+| `token` | LLM 流式生成的增量文本 |
+| `tool_call` | 一次工具调用（工具名 + 参数） |
+| `tool_result` | 工具执行结果（成功 / 输出 / 耗时） |
+| `done` | 完成（含 sessionId + 统计：TTFT / 总耗时 / token 用量） |
+| `error` | 出错（错误码 + 信息） |
+
+```bash
+curl -N -X POST http://localhost:8080/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query":"帮我查一下订单 ORD20240722001 的状态"}'
+```
+
+---
+
+## MCP Tools（业务工具）
+
+通过 `@McpTool` 注解注册，启动时由 `ToolRegistry` 自动扫描并暴露给 LLM 调用：
+
+| 工具 | 说明 | 所在类 |
+|------|------|--------|
+| `queryOrder` | 查询订单状态 / 物流 / 发货进度 | `OrderServiceTools` |
+| `refund` | 处理退款申请（订单号 + 原因） | `OrderServiceTools` |
+| `queryPoints` | 查询会员积分与等级 | `MemberServiceTools` |
+| `queryCoupons` | 查询会员可用优惠券 | `MemberServiceTools` |
+
+工具数据为内存态示例业务数据（订单 `ORD20240722001` 等、会员 `USER1001` 等），可直接替换为订单/会员服务真实接口。
+
+---
+
 ## Quick Start
 
 ```bash
@@ -237,6 +283,15 @@ mvn test -Dtest="RealLlmBenchmarkTest#runAblationStudy" \
 mvn test -Dtest="RealLlmBenchmarkTest#evaluateRagRetrieval" \
     -Dspring.profiles.active=deepseek \
     -Dshopmind.llm.qwen.api-key=sk-xxx
+
+# 4. 启动后端（默认 Mock LLM + 30 chunks 知识库 + 4 个真实 MCP 工具）
+mvn spring-boot:run
+
+# 5. 启动前端（Vite 代理 /api → http://localhost:8080）
+cd ../frontend
+npm install
+npm run dev
+# 访问 http://localhost:5173，对话走 POST /api/chat SSE 真连接
 ```
 
 ---
@@ -250,7 +305,7 @@ mvn test -Dtest="RealLlmBenchmarkTest#evaluateRagRetrieval" \
 | Test Files | 9 (81 tests, 0 failures) |
 | Workflow Versions | 8 (across 3 domains) |
 | Dataset Cases | 126 (7 scenarios) |
-| Knowledge Base | 80 chunks (商品/售后/物流/会员/支付/FAQ) |
+| Knowledge Base | 30 chunks (售后/物流/支付/营销/会员/商品/安全/客服/订单) |
 | Engine Modules | 6 (Memory/RAG/MCP/Workflow/Orchestrator/Evaluation) |
 | Framework Adapters | 3 (ShopMind/LangChain/OpenAI) |
 | Evaluation Methods | 2 (Rule-Based + LLM-as-Judge) |

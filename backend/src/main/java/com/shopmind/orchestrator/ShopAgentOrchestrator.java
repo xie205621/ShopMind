@@ -1,11 +1,15 @@
 package com.shopmind.orchestrator;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopmind.mcp.McpEngine;
 import com.shopmind.mcp.model.ToolSpecification;
+import com.shopmind.memory.message.AiMessage;
 import com.shopmind.memory.message.ChatMessage;
 import com.shopmind.memory.message.SystemMessage;
 import com.shopmind.memory.message.UserMessage;
 import com.shopmind.memory.store.ChatMemoryStore;
+import com.shopmind.orchestrator.domain.ChatStreamEvent;
 import com.shopmind.orchestrator.domain.ExecutionStatus;
 import com.shopmind.orchestrator.domain.ExecutionStep;
 import com.shopmind.orchestrator.domain.OrchestrationContext;
@@ -17,6 +21,7 @@ import com.shopmind.orchestrator.pipeline.ContextHydrationStep;
 import com.shopmind.orchestrator.pipeline.ToolIterationGuard;
 import com.shopmind.orchestrator.port.AgentOrchestrator;
 import com.shopmind.orchestrator.port.ChatModelPort;
+import com.shopmind.orchestrator.port.ChatStreamingPort;
 import com.shopmind.orchestrator.port.IntentAnalyzer;
 import com.shopmind.workflow.domain.WorkflowDefinition;
 import com.shopmind.workflow.domain.WorkflowInstance;
@@ -34,7 +39,11 @@ import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 智能体编排总入口 — §10 规范 + §6 全部约束。
@@ -61,7 +70,7 @@ import java.util.List;
  * Inner Loop: LLM ToolCall → MCP Engine → write Memory → re-prompt LLM (max 3 iterations)
  */
 @Component
-public class ShopAgentOrchestrator implements AgentOrchestrator {
+public class ShopAgentOrchestrator implements AgentOrchestrator, ChatStreamingPort {
 
     private static final Logger log = LoggerFactory.getLogger(ShopAgentOrchestrator.class);
 
@@ -70,7 +79,7 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
 
     /** 默认生产环境工作流定义 */
     private static final String DEFAULT_WORKFLOW_ID = "customer-service";
-    private static final String DEFAULT_WORKFLOW_VERSION = "v2.0";
+    private static final String DEFAULT_WORKFLOW_VERSION = "v2.3";
 
     private final IntentAnalyzer intentAnalyzer;
     private final ContextHydrationStep hydrationStep;
@@ -79,6 +88,7 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
     private final ChatMemoryStore memoryStore;
     private final ToolIterationGuard iterationGuard;
     private final CircuitBreakerRegistry circuitBreakerRegistry;
+    private final ObjectMapper objectMapper;
 
     /** Phase C: 工作流渲染器（纯函数，将 WorkflowInstance → System Prompt） */
     private final WorkflowRenderer renderer;
@@ -94,7 +104,8 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
             McpEngine mcpEngine,
             ChatMemoryStore memoryStore,
             ToolIterationGuard iterationGuard,
-            CircuitBreakerRegistry circuitBreakerRegistry) {
+            CircuitBreakerRegistry circuitBreakerRegistry,
+            ObjectMapper objectMapper) {
         this.intentAnalyzer = intentAnalyzer;
         this.hydrationStep = hydrationStep;
         this.renderer = renderer;
@@ -103,6 +114,7 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
         this.memoryStore = memoryStore;
         this.iterationGuard = iterationGuard;
         this.circuitBreakerRegistry = circuitBreakerRegistry;
+        this.objectMapper = objectMapper;
 
         // Phase C: 加载 YAML 工作流定义（persona + toolRules + constraints）
         this.workflowDefinition = WorkflowDefinitionLoader.load(
@@ -124,27 +136,52 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
     }
 
     // ============================================================
-    //  chat — 核心入口（§9 API Design）
+    //  chat — 纯文本入口（§9 API Design，供评测引擎使用）
     // ============================================================
 
     @Override
     public Flux<String> chat(OrchestrationRequest request) {
+        return stream(request).map(this::toText);
+    }
+
+    // ============================================================
+    //  stream — 结构化事件入口（供 HTTP/SSE 使用）
+    // ============================================================
+
+    @Override
+    public Flux<ChatStreamEvent> stream(OrchestrationRequest request) {
         // 1. 创建请求级上下文（每次请求都是新实例，不会跨线程共享）
         OrchestrationContext ctx = new OrchestrationContext(request.memoryId(), request.userMessage());
 
-        return Mono.just(ctx)
-                // ---- Outer Loop: 预处理阶段 ----
+        long startNanos = System.nanoTime();
+        AtomicLong firstTokenAtNanos = new AtomicLong(-1);
+        AtomicInteger totalChars = new AtomicInteger(0);
+        // 累积 AI 最终回复文本，用于本轮结束时回写 Memory
+        StringBuilder aiText = new StringBuilder();
+
+        // ---- Outer Loop: 预处理阶段（Intent → Memory+RAG → Prompt），先发 Intent 事件 ----
+        Flux<ChatStreamEvent> prelude = Mono.just(ctx)
                 .flatMap(this::stepIntentAnalysis)
-                .flatMap(hydrationStep::execute)    // §6: Mono.zip 并行加载
+                .flatMap(hydrationStep::execute)
+                // 在读取历史之后、组装 Prompt 之前持久化用户消息，避免本轮 history 重复
+                .doOnNext(this::writeUserToMemory)
                 .map(this::stepPromptAssembly)
+                .flatMapMany(c -> Flux.just(buildIntentEvent(c)));
+
+        return prelude
                 // ---- Outer Loop: LLM 推理 + Inner Loop ----
-                .flatMapMany(this::executeWithToolLoop)
+                .concatWith(Flux.defer(() -> executeWithToolLoop(ctx, firstTokenAtNanos, totalChars, aiText)))
                 // ---- 背压保护 (§6) ----
                 .onBackpressureBuffer(BACKPRESSURE_BUFFER, BufferOverflowStrategy.DROP_OLDEST)
+                // ---- 正常结束时追加 Done 事件 ----
+                .concatWith(Mono.fromSupplier(() -> buildDoneEvent(ctx, startNanos, firstTokenAtNanos, totalChars)))
                 // ---- 全局异常降级 ----
-                .onErrorResume(this::degradeFlux)
-                // ---- Side effect: 成功后写 Memory ----
-                .doOnComplete(() -> markSuccess(ctx))
+                .onErrorResume(this::degradeEvents)
+                // ---- Side effect: AI 回复回写 Memory + 状态记录 ----
+                .doOnComplete(() -> {
+                    writeAiToMemory(ctx, aiText.toString());
+                    markSuccess(ctx);
+                })
                 .doOnError(e -> markError(ctx, e));
     }
 
@@ -157,6 +194,7 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
         ctx.getState().advanceTo(ExecutionStep.INTENT_ANALYSIS);
         return intentAnalyzer.analyze(ctx.getUserMessage())
                 .map(intent -> {
+                    ctx.setIntent(intent);
                     log.info("[Orchestrator] Intent: knowledge={}, tools={}, category={}",
                             intent.requiresKnowledge(), intent.requiresTools(), intent.category());
                     return ctx;
@@ -165,10 +203,6 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
 
     /**
      * Step 3: Prompt 组装（Phase C — WorkflowRenderer 驱动）。
-     * <p>
-     * 构建 {@link WorkflowInstance}（定义 + 运行时数据），
-     * 委托 {@link WorkflowRenderer#render(WorkflowInstance)} 生成完整 System Prompt。
-     * 渲染结果存储到 ctx.assembledPrompt，供 {@link #buildMessages(OrchestrationContext)} 使用。
      */
     private OrchestrationContext stepPromptAssembly(OrchestrationContext ctx) {
         ctx.getState().advanceTo(ExecutionStep.PROMPT_ASSEMBLY);
@@ -197,91 +231,102 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
     // ============================================================
 
     /**
-     * Outer Loop + Inner Loop 合二为一。
-     * <p>
-     * Outer: 请求 LLM 推理。<br>
-     * Inner: 当 LLM 返回工具调用时，执行业务、写 Memory、重试 LLM（最多 3 次）。
+     * Outer Loop + Inner Loop 合二为一（事件版）。
      */
-    private Flux<String> executeWithToolLoop(OrchestrationContext ctx) {
+    private Flux<ChatStreamEvent> executeWithToolLoop(OrchestrationContext ctx,
+                                                      AtomicLong firstTokenAtNanos,
+                                                      AtomicInteger totalChars,
+                                                      StringBuilder aiText) {
         return Flux.defer(() -> {
             ctx.getState().advanceTo(ExecutionStep.LLM_INFERENCE);
 
-            // 构建消息列表
             List<ChatMessage> messages = buildMessages(ctx);
             List<ToolSpecification> tools = discoverTools();
 
-            // LLM 调用（CircuitBreaker 保护）
             return chatModelPort.stream(messages, tools)
                     .transformDeferred(CircuitBreakerOperator.of(
                             circuitBreakerRegistry.circuitBreaker("llmProvider")))
                     .retryWhen(Retry.backoff(2, Duration.ofMillis(500))
                             .filter(t -> t instanceof LlmProviderTimeoutException))
-                    .flatMap(token -> handleLlmToken(token, ctx, true));
+                    .flatMap(token -> handleLlmToken(token, ctx, firstTokenAtNanos, totalChars, aiText));
         });
     }
 
     /**
-     * 处理 LLM 返回的单个 Token：区分纯文本 / 工具调用。
-     *
-     * @param token     LLM 输出的文本片段
-     * @param ctx       当前上下文
-     * @param firstPass 是否为首轮 LLM 调用（用于 inner loop 递归控制）
+     * 处理 LLM 返回的单个 Token：区分纯文本 / 工具调用（事件版）。
      */
-    private Flux<String> handleLlmToken(String token, OrchestrationContext ctx, boolean firstPass) {
-        // 检测工具调用标记（使用 contains 兼容 Markdown/换行前缀）
-        if (token.contains("__TOOL_CALL__")) {
-            return executeToolAndRePrompt(token, ctx);
+    private Flux<ChatStreamEvent> handleLlmToken(String token, OrchestrationContext ctx,
+                                                 AtomicLong firstTokenAtNanos, AtomicInteger totalChars,
+                                                 StringBuilder aiText) {
+        if (token == null || token.isEmpty()) {
+            return Flux.empty();
         }
-        // 纯文本 → 直接输出
-        return Flux.just(token);
+        if (token.contains("__TOOL_CALL__")) {
+            return executeToolAndRePrompt(token, ctx, firstTokenAtNanos, totalChars, aiText);
+        }
+        firstTokenAtNanos.compareAndSet(-1, System.nanoTime());
+        totalChars.addAndGet(token.length());
+        aiText.append(token);
+        return Flux.just(new ChatStreamEvent.Token(token));
     }
 
     /**
-     * Inner Loop 核心：解析工具调用 → MCP 执行 → 写 Memory → 重新请求 LLM。
-     * 递归执行，最多 3 次（由 ToolIterationGuard 控制）。
+     * Inner Loop 核心（事件版）：解析工具调用 → MCP 执行 → 写 Memory → 重新请求 LLM。
      */
-    private Flux<String> executeToolAndRePrompt(String toolCallToken, OrchestrationContext ctx) {
+    private Flux<ChatStreamEvent> executeToolAndRePrompt(String toolCallToken, OrchestrationContext ctx,
+                                                         AtomicLong firstTokenAtNanos, AtomicInteger totalChars,
+                                                         StringBuilder aiText) {
         try {
             iterationGuard.checkAndIncrement(ctx.getState());
             ctx.getState().advanceTo(ExecutionStep.TOOL_EXECUTION);
         } catch (MaxIterationExceededException e) {
-            return Flux.just("\n\n" + degradeMaxIteration());
+            return Flux.just(new ChatStreamEvent.Token("\n\n" + degradeMaxIteration()));
         }
 
         // 解析工具调用格式: __TOOL_CALL__toolName{jsonArgs}
         String toolName = extractToolName(toolCallToken);
         String jsonArgs = extractJsonArgs(toolCallToken);
+        String callId = "call_" + ctx.getState().getToolCallCount();
 
         log.info("[Orchestrator] Tool call detected: tool={}, iteration={}",
                 toolName, ctx.getState().getToolCallCount());
 
         // 1. MCP Engine 执行工具
+        long toolStartNanos = System.nanoTime();
         String observation;
+        boolean success = true;
         try {
             observation = mcpEngine.executeTool(toolName, jsonArgs);
         } catch (Exception e) {
             observation = "工具执行失败: " + e.getMessage();
+            success = false;
             log.error("[Orchestrator] Tool execution failed: {}", toolName, e);
         }
+        long latencyMs = (System.nanoTime() - toolStartNanos) / 1_000_000;
+        boolean toolOk = success && !observation.startsWith("工具不存在") && !observation.startsWith("参数");
 
         // 2. §6: Inner Loop 记忆回写 — 把 ToolCall + Observation 写入 Memory
         writeToolToMemory(ctx, toolName, jsonArgs, observation);
 
         // 3. Observation 反哺给 LLM 重新推理
         String rePromptToken = "\n\n[工具执行结果: " + toolName + "]\n" + observation + "\n";
-        // 递归：将 observation 作为新的 user message 追加到上下文
         ctx.setAssembledPrompt(ctx.getAssembledPrompt() + rePromptToken);
 
-        // 重新调用 LLM（不通过 outer loop，直接在 inner loop 中递归）
-        return Flux.just(rePromptToken)
-                .concatWith(Flux.defer(() -> {
-                    List<ChatMessage> messages = buildMessages(ctx);
-                    List<ToolSpecification> tools = discoverTools();
-                    return chatModelPort.stream(messages, tools)
-                            .transformDeferred(CircuitBreakerOperator.of(
-                                    circuitBreakerRegistry.circuitBreaker("llmProvider")))
-                            .flatMap(nextToken -> handleLlmToken(nextToken, ctx, false));
-                }));
+        Map<String, Object> args = parseToolArgs(jsonArgs);
+        Flux<ChatStreamEvent> toolEvents = Flux.just(
+                new ChatStreamEvent.ToolCall(callId, toolName, args),
+                new ChatStreamEvent.ToolResult(callId, toolOk, observation, latencyMs)
+        );
+
+        // 重新调用 LLM（inner loop 递归）
+        return toolEvents.concatWith(Flux.defer(() -> {
+            List<ChatMessage> messages = buildMessages(ctx);
+            List<ToolSpecification> tools = discoverTools();
+            return chatModelPort.stream(messages, tools)
+                    .transformDeferred(CircuitBreakerOperator.of(
+                            circuitBreakerRegistry.circuitBreaker("llmProvider")))
+                    .flatMap(nextToken -> handleLlmToken(nextToken, ctx, firstTokenAtNanos, totalChars, aiText));
+        }));
     }
 
     // ============================================================
@@ -289,25 +334,23 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
     // ============================================================
 
     /**
-     * 统一的 Flux 异常降级处理。
-     * PromptsAssembly、MaxIteration、LLM 超时均通过此方法转为用户友好提示。
+     * 统一的 Flux 异常降级处理（事件版）。
      */
-    private Flux<String> degradeFlux(Throwable error) {
+    private Flux<ChatStreamEvent> degradeEvents(Throwable error) {
         if (error instanceof MaxIterationExceededException) {
             log.warn("[Orchestrator] Max iteration exceeded, degrading.");
-            return Flux.just(degradeMaxIteration());
+            return Flux.just(new ChatStreamEvent.Error("TIMEOUT", degradeMaxIteration()));
         }
         if (error instanceof PromptAssemblyException) {
             log.error("[Orchestrator] Prompt assembly failed.", error);
-            return Flux.just("上下文加载失败，请重试。");
+            return Flux.just(new ChatStreamEvent.Error("LLM_ERROR", "上下文加载失败，请重试。"));
         }
         if (error instanceof LlmProviderTimeoutException) {
             log.error("[Orchestrator] LLM provider timeout.", error);
-            return Flux.just("AI 服务暂时不可用，请稍后重试。");
+            return Flux.just(new ChatStreamEvent.Error("TIMEOUT", "AI 服务暂时不可用，请稍后重试。"));
         }
-        // 未知异常：打出 error 日志但向前端返回友好降级
         log.error("[Orchestrator] Unexpected error during orchestration.", error);
-        return Flux.just("系统遇到了一个意外错误，请稍后重试。");
+        return Flux.just(new ChatStreamEvent.Error("LLM_ERROR", "系统遇到了一个意外错误，请稍后重试。"));
     }
 
     /** MaxIteration 降级文案 */
@@ -315,10 +358,59 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
         return "系统当前遇到一些复杂情况，已为您转接人工客服。";
     }
 
-    /** CircuitBreaker 熔断降级（当 llmProvider 断路器打开时触发） */
-    private Flux<String> circuitBreakerFallback(Throwable t) {
-        log.warn("[Orchestrator] LLM CircuitBreaker OPEN, serving fallback response.");
-        return Flux.just("AI 服务暂时繁忙，请稍后再试。");
+    // ============================================================
+    //  事件构造辅助方法
+    // ============================================================
+
+    private ChatStreamEvent buildIntentEvent(OrchestrationContext ctx) {
+        IntentAnalyzer.IntentResult intent = ctx.getIntent();
+        if (intent == null) {
+            return new ChatStreamEvent.Intent("通用对话", false, false, 0.5);
+        }
+        return new ChatStreamEvent.Intent(
+                intent.category(), intent.requiresKnowledge(), intent.requiresTools(), 0.85);
+    }
+
+    private ChatStreamEvent buildDoneEvent(OrchestrationContext ctx, long startNanos,
+                                           AtomicLong firstTokenAtNanos, AtomicInteger totalChars) {
+        long totalMs = (System.nanoTime() - startNanos) / 1_000_000;
+        long firstTokenAt = firstTokenAtNanos.get();
+        long ttftMs = firstTokenAt > 0 ? (firstTokenAt - startNanos) / 1_000_000 : 0;
+        int prompt = estimatePromptTokens(ctx);
+        int completion = Math.max(1, totalChars.get() / 4);
+        return new ChatStreamEvent.Done(ctx.getMemoryId(),
+                new ChatStreamEvent.Stats(ttftMs, totalMs,
+                        new ChatStreamEvent.TokenUsage(prompt, completion)));
+    }
+
+    private int estimatePromptTokens(OrchestrationContext ctx) {
+        int chars = ctx.getAssembledPrompt() != null ? ctx.getAssembledPrompt().length() : 0;
+        int historyChars = ctx.hasHistory()
+                ? ctx.getHistory().stream()
+                        .mapToInt(m -> m.getContent() != null ? m.getContent().length() : 0)
+                        .sum()
+                : 0;
+        return Math.max(1, (chars + historyChars) / 4);
+    }
+
+    private String toText(ChatStreamEvent event) {
+        if (event instanceof ChatStreamEvent.Token t) {
+            return t.content();
+        }
+        if (event instanceof ChatStreamEvent.ToolResult tr) {
+            return "\n\n[工具执行结果]\n" + tr.output() + "\n";
+        }
+        return "";
+    }
+
+    private Map<String, Object> parseToolArgs(String jsonArgs) {
+        try {
+            return objectMapper.readValue(jsonArgs, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            Map<String, Object> raw = new HashMap<>();
+            raw.put("raw", jsonArgs);
+            return raw;
+        }
     }
 
     // ============================================================
@@ -349,17 +441,44 @@ public class ShopAgentOrchestrator implements AgentOrchestrator {
         }
     }
 
-    /** §6: 将 ToolCall + Observation 写入 Memory */
+    /** §6: 将 Tool 观察结果写入 Memory（作为系统注入上下文，而非重复的用户消息） */
     private void writeToolToMemory(OrchestrationContext ctx, String toolName,
                                     String jsonArgs, String observation) {
         try {
-            // getMessages 可能返回不可变空列表，必须 new ArrayList 包装
+            List<ChatMessage> currentHistory = new ArrayList<>(memoryStore.getMessages(ctx.getMemoryId()));
+            currentHistory.add(new SystemMessage("[工具执行结果: " + toolName + "]\n" + observation));
+            memoryStore.updateMessages(ctx.getMemoryId(), currentHistory);
+            log.debug("[Orchestrator] Tool observation written to memory for memoryId={}", ctx.getMemoryId());
+        } catch (Exception e) {
+            log.warn("[Orchestrator] Failed to write tool observation to memory: {}", e.getMessage());
+        }
+    }
+
+    /** 持久化当前用户消息（在读取历史之后调用，避免本轮 history 重复） */
+    private void writeUserToMemory(OrchestrationContext ctx) {
+        try {
             List<ChatMessage> currentHistory = new ArrayList<>(memoryStore.getMessages(ctx.getMemoryId()));
             currentHistory.add(new UserMessage(ctx.getUserMessage()));
             memoryStore.updateMessages(ctx.getMemoryId(), currentHistory);
-            log.debug("[Orchestrator] Tool call result written to memory for memoryId={}", ctx.getMemoryId());
         } catch (Exception e) {
-            log.warn("[Orchestrator] Failed to write tool call to memory: {}", e.getMessage());
+            log.warn("[Orchestrator] Failed to write user message to memory: {}", e.getMessage());
+        }
+    }
+
+    /** 持久化 AI 最终回复（本轮流式输出结束后回写） */
+    private void writeAiToMemory(OrchestrationContext ctx, String aiText) {
+        if (aiText == null || aiText.isBlank()) {
+            return;
+        }
+        try {
+            List<ChatMessage> currentHistory = new ArrayList<>(memoryStore.getMessages(ctx.getMemoryId()));
+            AiMessage aiMessage = new AiMessage();
+            aiMessage.setContent(aiText.trim());
+            currentHistory.add(aiMessage);
+            memoryStore.updateMessages(ctx.getMemoryId(), currentHistory);
+            log.debug("[Orchestrator] AI response written to memory for memoryId={}", ctx.getMemoryId());
+        } catch (Exception e) {
+            log.warn("[Orchestrator] Failed to write AI response to memory: {}", e.getMessage());
         }
     }
 

@@ -227,9 +227,9 @@ public class DeepSeekChatAdapter implements ChatModelPort {
 
             if (!accumulated.isEmpty()) {
                 // 解析: __NAME__toolName__NAME__{jsonArgs}
-                int nameEnd = accumulated.indexOf("__NAME__", 7);
+                int nameEnd = accumulated.indexOf("__NAME__", 8);
                 if (nameEnd > 0) {
-                    String toolName = accumulated.substring(7, nameEnd);
+                    String toolName = accumulated.substring(8, nameEnd);
                     String jsonArgs = accumulated.substring(nameEnd + 8);
                     log.info("[DeepSeek] Tool call: {} args={}", toolName, jsonArgs.length() > 100
                             ? jsonArgs.substring(0, 100) + "..." : jsonArgs);

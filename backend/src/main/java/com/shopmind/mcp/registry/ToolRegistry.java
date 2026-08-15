@@ -138,8 +138,10 @@ public class ToolRegistry implements BeanPostProcessor {
             // 从 @McpParam 获取元数据，不存在则使用默认值
             boolean required = paramAnnotation != null && paramAnnotation.required();
             String desc = paramAnnotation != null ? paramAnnotation.description() : "";
-            // 优先使用 @McpParam 的 name，否则使用反射获取的实际参数名
-            String paramName = param.getName();
+            // 优先使用 @McpParam 的显式 name，其次使用反射获取的实际参数名
+            String paramName = (paramAnnotation != null && !paramAnnotation.name().isBlank())
+                    ? paramAnnotation.name()
+                    : param.getName();
 
             ParameterSpec spec = ParameterSpec.builder()
                     .name(paramName)

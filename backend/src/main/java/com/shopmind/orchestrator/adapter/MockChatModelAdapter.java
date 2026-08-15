@@ -12,16 +12,19 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 
 /**
- * Mock 大模型适配器 — 用于开发/测试环境。
+ * Mock 大模型适配器 — 用于开发/测试环境（默认 Profile，无需外部 API Key）。
  * <p>
- * 根据用户输入返回模拟的 Token 流，支持工具调用标记。
- * 生产环境应替换为 OpenAIStreamingAdapter 或 DashScopeStreamingAdapter。
+ * 根据用户输入返回模拟的 Token 流，支持工具调用标记 {@code __TOOL_CALL__}。
+ * 当 System Prompt 中已包含工具执行结果时，返回最终总结，避免 inner loop 无限循环。
+ * 生产环境请使用 {@code @Profile("deepseek")} 或 {@code @Profile("qwen")}。
  */
 @Component
 @Profile("!prod & !qwen & !deepseek")
 public class MockChatModelAdapter implements ChatModelPort {
 
     private static final Logger log = LoggerFactory.getLogger(MockChatModelAdapter.class);
+
+    private static final String TOOL_RESULT_MARKER = "[工具执行结果:";
 
     @Override
     public Flux<String> stream(List<ChatMessage> messages, List<ToolSpecification> tools) {
@@ -30,13 +33,21 @@ public class MockChatModelAdapter implements ChatModelPort {
 
         log.debug("[MockLLM] Streaming for user query: '{}'", truncate(lastUserMsg));
 
-        // 根据关键词模拟不同的回复
-        if (lastUserMsg.contains("付款") || lastUserMsg.contains("支付")) {
-            // 模拟工具调用
-            return simulateToolCall("confirmPayment", "{\"orderNo\":\"ORD20240722001\"}", messages);
+        // 已执行过工具（System Prompt 含工具结果）→ 生成最终总结，避免循环
+        if (hasToolResult(messages)) {
+            return simulateFinalAnswer();
         }
-        if (lastUserMsg.contains("订单") || lastUserMsg.contains("查订单")) {
-            return simulateToolCall("queryOrder", "{\"orderNo\":\"ORD20240722001\"}", messages);
+
+        // 根据关键词模拟工具调用（工具名与 OrderServiceTools / MemberServiceTools 保持一致）
+        if (lastUserMsg.contains("退款") || lastUserMsg.contains("付款") || lastUserMsg.contains("支付")) {
+            return simulateToolCall("refund", "{\"orderId\":\"ORD20240722001\",\"reason\":\"用户申请退款\"}");
+        }
+        if (lastUserMsg.contains("订单") || lastUserMsg.contains("查订单")
+                || lastUserMsg.contains("物流") || lastUserMsg.contains("快递")) {
+            return simulateToolCall("queryOrder", "{\"orderId\":\"ORD20240722001\"}");
+        }
+        if (lastUserMsg.contains("积分") || lastUserMsg.contains("会员")) {
+            return simulateToolCall("queryPoints", "{\"userId\":\"USER1001\"}");
         }
         // 默认纯文本回复
         return simulateTextResponse(lastUserMsg);
@@ -53,10 +64,9 @@ public class MockChatModelAdapter implements ChatModelPort {
     }
 
     /**
-     * 模拟工具调用回复。
-     * LLM 首先确认意图，然后发射 TOOL_CALL 标记，最后返回基于 Observation 的总结。
+     * 模拟工具调用回复：先确认意图，再发射 TOOL_CALL 标记。
      */
-    private Flux<String> simulateToolCall(String toolName, String jsonArgs, List<ChatMessage> messages) {
+    private Flux<String> simulateToolCall(String toolName, String jsonArgs) {
         return Flux.just(
                 "正在为您处理", "，请稍候...",
                 "\n\n__TOOL_CALL__" + toolName + jsonArgs
@@ -64,11 +74,34 @@ public class MockChatModelAdapter implements ChatModelPort {
     }
 
     /**
+     * 工具执行完成后的最终总结回复。
+     */
+    private Flux<String> simulateFinalAnswer() {
+        return Flux.just("已为您", "处理完成，", "相关结果请见上方工具执行结果。",
+                "请问还有其他需要帮助的吗？");
+    }
+
+    /**
+     * 判断 System Prompt 中是否已包含工具执行结果（用于终止 inner loop）。
+     */
+    private boolean hasToolResult(List<ChatMessage> messages) {
+        if (messages == null || messages.isEmpty()) return false;
+        return messages.stream().anyMatch(m ->
+                "SYSTEM".equals(m.getType())
+                        && m.getContent() != null
+                        && m.getContent().contains(TOOL_RESULT_MARKER));
+    }
+
+    /**
      * 从消息列表中提取最后一条用户消息文本。
      */
     private String extractLastUserMessage(List<ChatMessage> messages) {
         if (messages == null || messages.isEmpty()) return "";
-        // 取最后一条消息（通常是当前 UserMessage）
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            if ("USER".equals(messages.get(i).getType())) {
+                return messages.get(i).getContent();
+            }
+        }
         return messages.get(messages.size() - 1).getContent();
     }
 
