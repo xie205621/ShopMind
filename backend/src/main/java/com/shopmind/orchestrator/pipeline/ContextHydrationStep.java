@@ -85,16 +85,20 @@ public class ContextHydrationStep implements PipelineStep {
                     return Mono.just(RetrievedContext.builder().build());
                 });
 
-        // ---- Mono.zip: 并行执行两个异步任务 ----
-        return Mono.zip(memoryMono, ragMono)
+        // ---- Mono.zip: 并行执行两个异步任务（elapsed 分别记录 Memory / RAG 耗时） ----
+        return Mono.zip(memoryMono.elapsed(), ragMono.elapsed())
                 .map(tuple -> {
-                    ctx.setHistory(tuple.getT1());
-                    RetrievedContext knowledge = tuple.getT2();
+                    ctx.setMemoryLatencyMs(tuple.getT1().getT1());
+                    ctx.setRagLatencyMs(tuple.getT2().getT1());
+                    ctx.setHistory(tuple.getT1().getT2());
+                    RetrievedContext knowledge = tuple.getT2().getT2();
                     ctx.setKnowledge(knowledge.hasResults() ? knowledge : null);
                     ctx.getState().advanceTo(ExecutionStep.PROMPT_ASSEMBLY);
-                    log.info("[Orchestrator] Context hydrated: {} history msgs, {} knowledge chunks",
+                    log.info("[Orchestrator] Context hydrated: {} history msgs, {} knowledge chunks "
+                                    + "(memory={}ms, rag={}ms)",
                             ctx.getHistory().size(),
-                            ctx.hasKnowledge() ? ctx.getKnowledge().getChunks().size() : 0);
+                            ctx.hasKnowledge() ? ctx.getKnowledge().getChunks().size() : 0,
+                            ctx.getMemoryLatencyMs(), ctx.getRagLatencyMs());
                     return ctx;
                 });
     }

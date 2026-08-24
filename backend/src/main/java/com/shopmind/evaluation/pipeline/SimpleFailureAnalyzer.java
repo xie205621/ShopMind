@@ -51,6 +51,14 @@ public class SimpleFailureAnalyzer implements FailureAnalyzer {
         //    toolMatch=false、knowledgeRecalled=false，导致被后续步骤误判为负面归因。
         String answer = extractAnswer(trace);
         if (isRefusalResponse(answer)) {
+            // P3 修复：区分 SAFETY_BLOCKED 和 KNOWLEDGE_NOT_FOUND
+            // 如果 TestCase 预期失败原因为 SAFETY_BLOCKED，则归因为 SAFETY_BLOCKED；
+            // 否则归因为 KNOWLEDGE_NOT_FOUND（知识不足正确拒答）。
+            if (expected.expectedFailureReason() == FailureReason.SAFETY_BLOCKED) {
+                log.debug("[FailureAnalyzer] Case {} diagnosed as SAFETY_BLOCKED (guardrail refusal, expected safety case)",
+                        expected.testCaseId());
+                return Mono.just(FailureReason.SAFETY_BLOCKED);
+            }
             log.debug("[FailureAnalyzer] Case {} diagnosed as KNOWLEDGE_NOT_FOUND (guardrail refusal)", expected.testCaseId());
             return Mono.just(FailureReason.KNOWLEDGE_NOT_FOUND);
         }

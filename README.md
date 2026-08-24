@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-v2.3-blue)](https://github.com)
 [![Java](https://img.shields.io/badge/Java-17-orange)](https://adoptium.net)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2_WebFlux-green)](https://spring.io)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2_Servlet-green)](https://spring.io)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue)](LICENSE)
 
 **ShopMind** 是一个面向大模型软件工程（LLM4SE）的评估驱动 AI 智能体编排平台。它将 LLM 的非确定行为转化为版本化、可观测、可量化的确定性工作流执行，为智能体可靠性研究提供基础的实证测试床。
@@ -21,7 +21,7 @@ ShopMind 采用**六引擎反应式微内核架构**，严格遵循领域驱动�
                        │                                 │
   ┌──────────┐  ┌──────┴──────┐  ┌──────────┐  ┌────────┴───┐
   │ Memory   │  │ RAG Engine  │  │Workflow  │  │ MCP Engine │
-  │ Engine   │  │ (Retrieval) │  │ Engine   │  │ (Sandbox)  │
+  │ Engine   │  │ (Retrieval) │  │ Engine   │  │ (Reflect)  │
   └──────────┘  └─────────────┘  └──────────┘  └────────────┘
                        │                                 │
                        └───────────────┬─────────────────┘
@@ -38,7 +38,7 @@ ShopMind 采用**六引擎反应式微内核架构**，严格遵循领域驱动�
 | **Memory Engine** | 多租户滑动窗口记忆（MongoDB），FIFO 截断 |
 | **RAG Engine** | Embedding → 向量检索 → 阈值熔断 → 知识注入 |
 | **Workflow Engine** | 版本化 Persona + ToolRules + Constraints 管理 |
-| **MCP Engine** | 反射沙箱工具执行，前置安全路由 |
+| **MCP Engine** | 反射工具调用 + 超时熔断，前置意图路由 |
 | **Evaluation Engine** | 自动化 Benchmark + LLM-as-Judge + 失败归因 |
 
 ---
@@ -132,7 +132,7 @@ Dataset (126 Cases)
 | Mode B (+工具) | 80.0% | 0.0% | 27.8% |
 | Mode C (+RAG+Guard) | 60.0% | 0.0% | 38.9% |
 
-> RAG 知识增强提升业务能力，Guardrails 提供显式安全边界。全链路零幻觉。
+> RAG 知识增强提升业务能力，Guardrails 提供显式安全边界。在 28 用例消融对抗集上 LLM-as-Judge 判幻觉率 0%。
 
 ### E3: RAG 检索质量评测
 
@@ -260,7 +260,7 @@ curl -N -X POST http://localhost:8080/api/chat \
 ```bash
 # Prerequisites: MongoDB, JDK 17
 
-# 1. Run all 81 unit tests
+# 1. Run all 102 unit tests (0 failures, 7 skipped)
 cd backend
 mvn test
 
@@ -302,12 +302,12 @@ npm run dev
 |--------|-------|
 | Java Source Files | 97 |
 | Lines of Code | 6,622 |
-| Test Files | 9 (81 tests, 0 failures) |
+| Test Files | 13 (102 tests, 0 failures, 7 skipped) |
 | Workflow Versions | 8 (across 3 domains) |
 | Dataset Cases | 126 (7 scenarios) |
 | Knowledge Base | 30 chunks (售后/物流/支付/营销/会员/商品/安全/客服/订单) |
 | Engine Modules | 6 (Memory/RAG/MCP/Workflow/Orchestrator/Evaluation) |
-| Framework Adapters | 3 (ShopMind/LangChain/OpenAI) |
+| Framework Adapters | 1 可用 + 2 骨架 (ShopMind 可用；LangChain/OpenAI 骨架) |
 | Evaluation Methods | 2 (Rule-Based + LLM-as-Judge) |
 | Evaluation Experiments | 3 (Matrix + Ablation + Retrieval) |
 | Failure Categories | 7 (Failure Taxonomy) |

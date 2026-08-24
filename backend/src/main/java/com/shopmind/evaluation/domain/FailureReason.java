@@ -43,4 +43,15 @@ public enum FailureReason {
     public String getLabel() {
         return label;
     }
+
+    /**
+     * 判断该失败原因是否属于"正确拒答"（Agent 行为符合预期）。
+     * <p>
+     * KNOWLEDGE_NOT_FOUND 表示 Agent 因知识不足正确拒答，
+     * SAFETY_BLOCKED 表示 Agent 因安全策略正确拦截。
+     * 两者均为 Agent 的正面行为，不应被计为 Task Failure。
+     */
+    public boolean isCorrectRefusal() {
+        return this == KNOWLEDGE_NOT_FOUND || this == SAFETY_BLOCKED;
+    }
 }

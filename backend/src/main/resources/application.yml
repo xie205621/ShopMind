@@ -18,6 +18,9 @@ shopmind:
   mcp:
     timeout-ms: 3000
   llm:
+    # LLM Provider 单次流式调用超时（ms），超时抛 LlmProviderTimeoutException 并触发降级
+    timeout-ms: 30000
+
     qwen:
       # 通过环境变量 QWEN_API_KEY 注入，或直接替换此处
       api-key: ${QWEN_API_KEY:}
@@ -29,8 +32,10 @@ shopmind:
     deepseek:
       # 通过环境变量 DEEPSEEK_API_KEY 注入
       api-key: ${DEEPSEEK_API_KEY:}
-      # 对话模型：deepseek-chat / deepseek-reasoner
+      # 对话模型：deepseek-v4-flash（默认，可通过 DEEPSEEK_CHAT_MODEL 覆盖）
       chat-model: ${DEEPSEEK_CHAT_MODEL:deepseek-v4-flash}
+      # FR2 修复：seed 参数（设为整数可提升可复现性，留空则不发送）
+      seed: ${DEEPSEEK_SEED:}
 
   orchestrator:
     max-iterations: 3
@@ -41,6 +46,8 @@ resilience4j:
     configs:
       default:
         sliding-window-size: 10
+        # 熔断前需要的最小调用数（Resilience4j 默认 100，低流量下熔断不生效，需显式调低）
+        minimum-number-of-calls: 5
         failure-rate-threshold: 50
         wait-duration-in-open-state: 30s
         permitted-number-of-calls-in-half-open-state: 3

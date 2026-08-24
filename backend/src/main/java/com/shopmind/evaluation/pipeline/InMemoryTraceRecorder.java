@@ -3,6 +3,7 @@ package com.shopmind.evaluation.pipeline;
 import com.shopmind.orchestrator.domain.ExecutionStatus;
 import com.shopmind.workflow.domain.ExecutionTrace;
 import com.shopmind.workflow.domain.ObservabilityMetrics;
+import com.shopmind.workflow.domain.RunIdentity;
 import com.shopmind.workflow.domain.TraceSpan;
 import com.shopmind.workflow.port.TraceRecorder;
 import org.slf4j.Logger;
@@ -38,8 +39,13 @@ public class InMemoryTraceRecorder implements TraceRecorder {
 
     @Override
     public TraceHandle createTrace(String memoryId, String workflowVersion) {
+        return createTrace(memoryId, workflowVersion, null);
+    }
+
+    @Override
+    public TraceHandle createTrace(String memoryId, String workflowVersion, RunIdentity runIdentity) {
         String traceId = UUID.randomUUID().toString();
-        ExecutionTrace trace = new ExecutionTrace(traceId, memoryId, workflowVersion);
+        ExecutionTrace trace = new ExecutionTrace(traceId, memoryId, workflowVersion, runIdentity);
         return new InMemoryTraceHandle(trace);
     }
 
@@ -119,6 +125,11 @@ public class InMemoryTraceRecorder implements TraceRecorder {
         @Override
         public String getTraceId() {
             return trace.getTraceId();
+        }
+
+        @Override
+        public ExecutionTrace getExecutionTrace() {
+            return trace;
         }
 
         @Override

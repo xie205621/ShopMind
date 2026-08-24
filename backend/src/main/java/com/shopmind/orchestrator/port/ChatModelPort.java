@@ -26,4 +26,14 @@ public interface ChatModelPort {
      * @return Token 文本流，可能包含工具调用标记
      */
     Flux<String> stream(List<ChatMessage> messages, List<ToolSpecification> tools);
+
+    /**
+     * 当前适配器实际使用的模型标识（用于请求级可观测性日志）。
+     * <p>
+     * 默认返回 {@code "unknown"}；各厂商适配器应覆写返回真实模型名
+     * （如 {@code qwen-plus} / {@code deepseek-v4-flash} / {@code mock}）。
+     */
+    default String modelName() {
+        return "unknown";
+    }
 }

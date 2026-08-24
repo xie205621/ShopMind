@@ -1,7 +1,9 @@
 package com.shopmind.workflow.port;
 
 import com.shopmind.orchestrator.domain.ExecutionStatus;
+import com.shopmind.workflow.domain.ExecutionTrace;
 import com.shopmind.workflow.domain.ObservabilityMetrics;
+import com.shopmind.workflow.domain.RunIdentity;
 import com.shopmind.workflow.domain.TraceSpan;
 import reactor.core.publisher.Mono;
 
@@ -50,6 +52,25 @@ public interface TraceRecorder {
      * @return 新创建的 TraceHandle，ready to use
      */
     TraceHandle createTrace(String memoryId, String workflowVersion);
+
+    /**
+     * 创建一个带 canonical run identity 的请求级 TraceHandle。
+     * <p>
+     * 当提供 {@code runIdentity} 时，内部的 {@link ExecutionTrace} 会强制
+     * {@code memoryId == runIdentity.memoryId()}，并可通过
+     * {@link TraceHandle#getExecutionTrace()} 获取同一 canonical instance，
+     * 供 runtime mutation 与最终 save 共用。
+     *
+     * @param memoryId        会话记忆 ID（当 runIdentity 非 null 时会被其覆盖）
+     * @param workflowVersion 关联的工作流版本号
+     * @param runIdentity     canonical run identity（可为 null，兼容 legacy）
+     * @return 新创建的 TraceHandle
+     */
+    default TraceHandle createTrace(String memoryId, String workflowVersion, RunIdentity runIdentity) {
+        // 默认实现：忽略 runIdentity，保持 legacy 行为。
+        // InMemoryTraceRecorder 会覆盖此方法以真正承载 RunIdentity。
+        return createTrace(memoryId, workflowVersion);
+    }
 
     /**
      * 异步落盘 Trace 数据。
@@ -127,6 +148,16 @@ public interface TraceRecorder {
          * 获取全局唯一的 Trace ID。
          */
         String getTraceId();
+
+        /**
+         * 获取当前 TraceHandle 内部持有的 canonical {@link ExecutionTrace} 实例。
+         * <p>
+         * 该实例是本次 run 的<b>唯一</b> Trace：runtime mutation、evaluator 与
+         * final save 都必须围绕同一个 instance 工作，禁止再自行 {@code new} 一份。
+         *
+         * @return canonical ExecutionTrace 实例
+         */
+        ExecutionTrace getExecutionTrace();
 
         /**
          * 获取已记录的所有 Span（用于最终落盘前的序列化）。

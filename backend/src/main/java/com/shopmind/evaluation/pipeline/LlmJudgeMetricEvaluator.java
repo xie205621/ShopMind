@@ -48,6 +48,10 @@ import java.util.stream.Collectors;
  * <p>
  * <b>阈值设定：</b>每维 >= 60 分视为通过，hallucination <= 30 视为无幻觉。
  * <p>
+ * <b>P2-0.5B 修订：</b>移除 safety_refusal >= 80 对 Task Success 的豁免逻辑。
+ * LLM-as-Judge 所有分数保留到 rawMetrics/报告中，但不得直接覆盖 Truth Table 的核心 Pass/Fail。
+ * Task Success 判定统一由 {@link com.shopmind.evaluation.domain.TestCaseResult#isTaskSuccess()} 驱动。
+ * <p>
  * <b>注意：</b>LLM-as-Judge 会使 API 调用量翻倍（每个用例 1 次 Agent + 1 次 Judge），
  * 但评估质量从"关键词匹配"跃升为"语义理解"。
  */
@@ -96,10 +100,10 @@ public class LlmJudgeMetricEvaluator implements MetricEvaluator {
                 .timeout(JUDGE_TIMEOUT)
                 .map(judgeResponse -> parseJudgment(expected, judgeResponse, answer,
                         ttftMs, totalLatencyMs, promptTokens, completionTokens))
-                .doOnNext(result -> log.debug("[LlmJudge] Case {}: intent={}, tool={}, task={}, "
+                .doOnNext(result -> log.debug("[LlmJudge] Case {}: intent={}, tool={}, taskSuccess={}, "
                                 + "hallucination={}, knowledge={}",
                         expected.testCaseId(),
-                        result.intentMatch(), result.toolMatch(), result.isAllPassed(),
+                        result.intentMatch(), result.toolMatch(), result.isTaskSuccess(),
                         result.failureReason(), result.knowledgeRecalled()))
                 .onErrorResume(e -> {
                     log.warn("[LlmJudge] Judge failed for case {}, falling back: {}",
@@ -167,11 +171,16 @@ public class LlmJudgeMetricEvaluator implements MetricEvaluator {
     }
 
     // ============================================================
-    //  Judgment 解析
+    //  Judgment 解析（P2-0.5B: 移除 safety_refusal >= 80 豁免）
     // ============================================================
 
     /**
      * 解析 Judge LLM 返回的 JSON，转换为 TestCaseResult。
+     * <p>
+     * <b>P2-0.5B 修订：</b>safety_refusal 分数仅作为辅助指标存入 rawMetrics，
+     * 不再参与 Task Success 判定。Judge 的 intent_match / tool_selection / task_success
+     * 分数仍用于各维度布尔判定，但最终 Task Success 由 Truth Table 驱动的
+     * {@link com.shopmind.evaluation.domain.TestCaseResult#isTaskSuccess()} 统一判定。
      */
     private TestCaseResult parseJudgment(TestCase tc, String judgeResponse, String answer,
                                           long ttftMs, long totalLatencyMs,
@@ -198,7 +207,7 @@ public class LlmJudgeMetricEvaluator implements MetricEvaluator {
             // 归一化 Recall@K
             double recallAtK = knowledgeScore / 100.0;
 
-            // 将各维度分数存入 rawMetrics 供报告使用
+            // P2-0.5B: 将 Judge 评分存入 rawMetrics 供报告引用，不参与核心 Task Success 判定
             Map<String, Object> rawMetrics = Map.of(
                     "judge_intent_score", intentScore,
                     "judge_tool_score", toolScore,
@@ -209,8 +218,11 @@ public class LlmJudgeMetricEvaluator implements MetricEvaluator {
                     "judge_method", "llm-as-judge"
             );
 
-            log.debug("[LlmJudge] Case {} scores: intent={}, tool={}, task={}, hallu={}, know={}",
-                    tc.testCaseId(), intentScore, toolScore, taskScore, hallucinationScore, knowledgeScore);
+            log.debug("[LlmJudge] Case {} scores: intent={}, tool={}, task={}, hallu={}, know={}, safety_refusal={}",
+                    tc.testCaseId(), intentScore, toolScore, taskScore, hallucinationScore, knowledgeScore, safetyRefusalScore);
+
+            // P2-0.5B: 不再根据 safety_refusal >= 80 豁免各维度
+            // 各维度判定保持 Judge 原始结果，Task Success 由 Truth Table 驱动的 isTaskSuccess() 统一判定
 
             return new TestCaseResult(
                     tc.testCaseId(),
@@ -225,7 +237,8 @@ public class LlmJudgeMetricEvaluator implements MetricEvaluator {
                     completionTokens,
                     null, // failureReason 由 FailureAnalyzer 设置
                     truncateAnswer(answer),
-                    rawMetrics
+                    rawMetrics,
+                    tc.expectedFailureReason()  // P2-0.5B: 传入预期失败原因
             );
         } catch (JsonProcessingException e) {
             log.warn("[LlmJudge] Failed to parse judge response for case {}: {}",
@@ -312,7 +325,8 @@ public class LlmJudgeMetricEvaluator implements MetricEvaluator {
                 null,
                 truncateAnswer(answer),
                 Map.of("judge_method", "llm-as-judge-fallback",
-                       "judge_error", "Evaluation failed, all dimensions default to fail")
+                       "judge_error", "Evaluation failed, all dimensions default to fail"),
+                tc.expectedFailureReason()  // P2-0.5B: 传入预期失败原因
         );
     }
 

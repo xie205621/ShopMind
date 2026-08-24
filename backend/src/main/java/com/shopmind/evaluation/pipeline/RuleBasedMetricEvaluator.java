@@ -80,7 +80,8 @@ public class RuleBasedMetricEvaluator implements MetricEvaluator {
                 completionTokens,
                 null,  // failureReason 由 FailureAnalyzer 后续设置
                 truncateAnswer(answer),
-                Collections.emptyMap()
+                Collections.emptyMap(),
+                expected.expectedFailureReason()  // P2-0.5B: 传入预期失败原因
         ));
     }
 

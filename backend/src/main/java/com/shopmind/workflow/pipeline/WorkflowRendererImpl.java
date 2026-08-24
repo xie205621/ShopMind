@@ -42,6 +42,11 @@ public class WorkflowRendererImpl implements WorkflowRenderer {
 
     @Override
     public String render(WorkflowInstance instance) {
+        return render(instance, instance.definition().toolRules());
+    }
+
+    @Override
+    public String render(WorkflowInstance instance, List<ToolRule> visibleToolRules) {
         WorkflowDefinition def = instance.definition();
 
         StringBuilder sb = new StringBuilder();
@@ -59,8 +64,8 @@ public class WorkflowRendererImpl implements WorkflowRenderer {
             }
         }
 
-        // ---- 3. Tool Rules (可用工具声明) ----
-        List<ToolRule> toolRules = def.toolRules();
+        // ---- 3. Tool Rules (可用工具声明，仅渲染 visibleToolRules) ----
+        List<ToolRule> toolRules = visibleToolRules != null ? visibleToolRules : List.of();
         if (!toolRules.isEmpty()) {
             sb.append("\n【可用工具】你可以调用以下工具来执行业务操作：\n");
             for (ToolRule rule : toolRules) {

@@ -25,7 +25,7 @@ ShopMind 提出了一种**评估驱动的反应式 AI 智能体平台**。它通
 
 ## 3. 核心贡献 (Contributions)
 
-1. **六引擎解耦架构**：Memory / RAG / Workflow / MCP / Orchestrator / Evaluation 关注点分离，通过 Spring WebFlux 实现全链路异步调度
+1. **六引擎解耦架构**：Memory / RAG / Workflow / MCP / Orchestrator / Evaluation 关注点分离，基于 Project Reactor 实现响应式调度（SSE 流式 + WebClient 出站）
 2. **版本化 Workflow 建模**：8 个工作流版本 × 3 个业务域，支持严格 A/B 对照实验
 3. **LLM-as-Judge 评估体系**：用第二路 LLM 进行 5 维语义评分，替代传统关键词匹配
 4. **框架无关评测接口**：通过 `EvaluableAgent` 抽象，兼容 ShopMind / LangChain / OpenAI SDK 等多种 Agent 框架
@@ -68,10 +68,10 @@ ShopMind 提出了一种**评估驱动的反应式 AI 智能体平台**。它通
 | Parameter | Value |
 |-----------|-------|
 | **Hardware** | 8核 CPU, 16GB RAM |
-| **Java** | 17 + Spring Boot 3.2 (WebFlux) |
+| **Java** | 17 + Spring Boot 3.2 (Servlet + WebClient) |
 | **Agent LLM** | deepseek-v4-flash (Temperature=0.1) |
 | **Judge LLM** | deepseek-v4-flash (LLM-as-Judge, Temperature=0.0) |
-| **Embedding** | DashScope text-embedding-v3 |
+| **Embedding** | qwen: text-embedding-v3；default/deepseek: Mock SHA-256 |
 | **Knowledge Base** | 30 chunks (售后/物流/支付/营销/会员/商品/安全/客服/订单) |
 | **Dataset** | 126 cases × 7 scenarios (v1.0) |
 | **Concurrency** | maxConcurrency=2, RPM=10 (token bucket) |
@@ -129,7 +129,7 @@ ShopMind 提出了一种**评估驱动的反应式 AI 智能体平台**。它通
 | **Hit@1** | **90%** (9/10) |
 | **Hit@3** | **100%** (10/10) |
 
-10/10 queries correctly retrieved their target chunk within top 3. The embedding model (DashScope text-embedding-v3) + InMemory vector store achieves reliable semantic retrieval, validating the RAG pipeline's retrieval layer.
+10/10 queries correctly retrieved their target chunk within top 3. The embedding model (qwen: text-embedding-v3; default/deepseek: Mock SHA-256) + InMemory vector store achieves reliable semantic retrieval, validating the RAG pipeline's retrieval layer.
 
 > **完整实验报告：** `docs/04_Evaluation/Benchmark_Report.md` | 原始数据：`reports/` 目录下的 `.md` 文件
 

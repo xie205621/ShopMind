@@ -2,10 +2,10 @@
 
 ![Version](https://img.shields.io/badge/version-v2.3-blue)
 ![Java](https://img.shields.io/badge/Java-17-orange)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2_WebFlux-green)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2_Servlet-green)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 
-**ShopMind** 是一个生产级可信 AI 智能体编排平台，为大模型驱动的业务系统提供可复用的软件工程底座，涵盖工作流编排、长短期记忆、RAG 检索、沙箱工具执行与自动化评测。本项目以电商导购助手作为首个参考实现，同时支持售前导购（sales）和财务助手（finance）等场景。
+**ShopMind** 是一个生产级可信 AI 智能体编排平台，为大模型驱动的业务系统提供可复用的软件工程底座，涵盖工作流编排、长短期记忆、RAG 检索、工具执行与自动化评测。本项目以电商导购助手作为首个参考实现，同时支持售前导购（sales）和财务助手（finance）等场景。
 
 ---
 
@@ -14,9 +14,9 @@
 | 传统大模型应用痛点                    | ShopMind 核心解决方案                                        |
 | :------------------------------------ | :----------------------------------------------------------- |
 | 提示词与业务代码深度耦合，难以维护     | **Engine Isolation**：业务逻辑与大模型提示词严格隔离，版本化管理 |
-| 串行请求导致首字延迟（TTFT）极高       | **Reactive Streaming**：基于 WebFlux 实现全链路异步无阻塞 |
+| 串行请求导致首字延迟（TTFT）极高       | **Reactive Streaming**：基于 Project Reactor 实现 SSE 流式 + WebClient 出站 |
 | 黑盒运行，无法解释 Agent 为什么出错    | **Observability**：步骤级 ExecutionTrace 全链路留痕 |
-| 大模型自由调用 API 导致严重越权风险    | **Trustworthy MCP**：反射沙箱 + 前置意图路由 + 安全约束 |
+| 大模型自由调用 API 导致严重越权风险    | **Trustworthy MCP**：反射调用 + 超时熔断 + 前置意图路由 + 安全约束 |
 | 缺乏评估标准，凭感觉调优 Prompt        | **Built-in Evaluation**：自动化 A/B 测试 + 失败根因分析 |
 
 ---
@@ -42,11 +42,11 @@
 
 | Engine | 核心职责 | 技术栈 |
 |--------|----------|--------|
-| **Orchestrator** | 意图分类 → 上下文装配 → LLM 流式调用 | Reactor / WebFlux / Resilience4j |
+| **Orchestrator** | 意图分类 → 上下文装配 → LLM 流式调用 | Project Reactor / WebClient / Resilience4j |
 | **Memory Engine** | 多租户滑动窗口记忆、持久化画像 | MongoDB / Embedded MongoDB (test) |
 | **RAG Engine** | 向量检索 → 阈值熔断 → 知识注入 | InMemory / Qdrant (planned) |
 | **Workflow Engine** | 版本化 Persona + ToolRules + Constraints | YAML DSL + SnakeYAML |
-| **MCP Engine** | 反射沙箱工具执行、安全路由 | Java Reflection / ToolSpec |
+| **MCP Engine** | 反射工具调用 + 超时熔断、前置意图路由 | Java Reflection / ToolSpec |
 | **Evaluation Engine** | Benchmark Runner + LLM-as-Judge | Reactor Flux / DeepSeek |
 
 ---
@@ -192,7 +192,7 @@ Adapter  Adapter  Adapter
 ## Quick Start
 
 ```bash
-# 1. 运行全部 81 个单元测试
+# 1. 运行全部 102 个单元测试（0 失败 / 7 skipped）
 cd backend && mvn test
 
 # 2. Mock Benchmark（无 API 费用）
@@ -234,12 +234,12 @@ npm run dev
 |--------|-------|
 | Java Source Files | 97 |
 | Lines of Code | 6,622 |
-| Test Files | 9 (81 tests) |
+| Test Files | 13 (102 tests, 0 failures, 7 skipped) |
 | Workflow Versions | 8 (3 domains) |
 | Dataset Cases | 126 (7 scenarios) |
 | Knowledge Base | 30 chunks |
 | Engine Modules | 6 |
-| Framework Adapters | 3 |
+| Framework Adapters | 1 可用 + 2 骨架 |
 | Evaluation Methods | 2 |
 | Evaluation Experiments | 3 (Matrix + Ablation + Retrieval) |
 | Failure Categories | 7 |

@@ -3,6 +3,10 @@ package com.shopmind.evaluation.port;
 import com.shopmind.evaluation.domain.BenchmarkConfig;
 import com.shopmind.evaluation.domain.EvaluationDataset;
 import com.shopmind.evaluation.domain.ExperimentReport;
+import com.shopmind.evaluation.rtmp.RtmpRunOutcome;
+import com.shopmind.evaluation.rtmp.RtmpTestCase;
+import com.shopmind.experiment.ExperimentCondition;
+import com.shopmind.workflow.domain.ExecutionTrace;
 import reactor.core.publisher.Mono;
 
 /**
@@ -39,4 +43,42 @@ public interface BenchmarkRunner {
      *         Report 中仍会包含完整的失败分布和采样详情
      */
     Mono<ExperimentReport> run(EvaluationDataset dataset, BenchmarkConfig config, String isolationPrefix);
+
+    /**
+     * 执行单个 RTMP 用例的 instrumentation run（Phase 1-B）。
+     * <p>
+     * 基于 {@code experimentId / condition / caseId / repetition} 生成 canonical
+     * {@link com.shopmind.workflow.domain.RunIdentity}，保证
+     * {@code memoryId == runId}，并返回本次 run 的 canonical {@link ExecutionTrace}。
+     * <p>
+     * 该方法<b>只做 instrumentation wiring</b>：真实驱动 Orchestrator、生成并追加
+     * {@code ToolCallEvent}，不包含任何 Verifier / pruning / 策略切换。
+     *
+     * @param testCase   RTMP 用例（提供 caseId 与 query）
+     * @param config     实验超参数配置（提供 experimentId）
+     * @param condition  实验条件（BASELINE_A / BASELINE_B / METHOD_C）
+     * @param repetition repetition 序号（1..3）
+     * @return 完成后的 canonical ExecutionTrace（含 runtime ToolCallEvent）
+     */
+    Mono<ExecutionTrace> runRtmpCase(RtmpTestCase testCase, BenchmarkConfig config,
+                                     ExperimentCondition condition, int repetition);
+
+    /**
+     * 执行单个 RTMP 用例的 instrumentation run，并返回分类后的 Run Outcome（Phase 1-C）。
+     * <p>
+     * 与 {@link #runRtmpCase} 的区别：额外基于 canonical Trace 与异常进行
+     * {@link com.shopmind.evaluation.rtmp.RunStatus} 分类，将 Raw 执行事实与
+     * 实验级运行状态打包为 {@link RtmpRunOutcome}。
+     * <p>
+     * 本方法<b>仍只做 instrumentation wiring + run outcome classification</b>，
+     * 不包含任何 Verifier / pruning / 策略切换 / safety metric / statistical testing。
+     *
+     * @param testCase   RTMP 用例（提供 caseId 与 query）
+     * @param config     实验超参数配置（提供 experimentId）
+     * @param condition  实验条件（BASELINE_A / BASELINE_B / METHOD_C）
+     * @param repetition repetition 序号（1..3）
+     * @return 分类后的 {@link RtmpRunOutcome}（canonical Trace + RunStatus）
+     */
+    Mono<RtmpRunOutcome> runRtmpCaseOutcome(RtmpTestCase testCase, BenchmarkConfig config,
+                                            ExperimentCondition condition, int repetition);
 }

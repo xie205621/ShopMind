@@ -22,6 +22,8 @@ import java.util.List;
  * @param vectorStore      向量数据库类型（如 "InMemory", "Qdrant"）
  * @param maxConcurrency   最大并发评测数（控制 Orchestrator 在途请求）
  * @param rpmLimit         每分钟请求上限（RPM rate limit，防 LLM 厂商 429）
+ * @param seed             随机种子（可为 null；设值后可提升可复现性，取决于 LLM API 支持）
+ * @param maxTokens        最大输出 Token 数（可为 null；设值后限制 LLM 回答长度，P2-0.5C 新增）
  */
 public record BenchmarkConfig(
         String experimentId,
@@ -33,7 +35,9 @@ public record BenchmarkConfig(
         String embeddingModel,
         String vectorStore,
         int maxConcurrency,
-        int rpmLimit
+        int rpmLimit,
+        Integer seed,
+        Integer maxTokens  // P2-0.5C: 新增
 ) {
 
     /** 默认并发限制 */
@@ -80,7 +84,9 @@ public record BenchmarkConfig(
                 "embeddingModel=" + embeddingModel,
                 "vectorStore=" + vectorStore,
                 "maxConcurrency=" + maxConcurrency,
-                "rpmLimit=" + rpmLimit
+                "rpmLimit=" + rpmLimit,
+                "seed=" + (seed != null ? seed : "null"),
+                "maxTokens=" + (maxTokens != null ? maxTokens : "null")
         );
     }
 }

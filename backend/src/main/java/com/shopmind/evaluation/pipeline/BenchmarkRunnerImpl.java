@@ -12,8 +12,16 @@ import com.shopmind.evaluation.port.BenchmarkRunner;
 import com.shopmind.evaluation.port.EvaluableAgent;
 import com.shopmind.evaluation.port.FailureAnalyzer;
 import com.shopmind.evaluation.port.MetricEvaluator;
+import com.shopmind.evaluation.rtmp.RtmpRunOutcome;
+import com.shopmind.evaluation.rtmp.RtmpTestCase;
+import com.shopmind.evaluation.rtmp.RunStatusClassifier;
+import com.shopmind.experiment.ExperimentCondition;
+import com.shopmind.experiment.ExperimentRuntimeConfig;
+import com.shopmind.experiment.RtmpRuntimeScenarioProvider;
+import com.shopmind.experiment.RuntimeSessionContextProvider;
 import com.shopmind.orchestrator.domain.ExecutionStatus;
 import com.shopmind.workflow.domain.ObservabilityMetrics;
+import com.shopmind.workflow.domain.RunIdentity;
 import com.shopmind.workflow.domain.TraceSpan;
 import com.shopmind.workflow.port.TraceRecorder;
 import io.github.resilience4j.ratelimiter.RateLimiter;
@@ -78,18 +86,24 @@ public class BenchmarkRunnerImpl implements BenchmarkRunner {
     private final MetricEvaluator evaluator;
     private final FailureAnalyzer failureAnalyzer;
     private final TraceRecorder traceRecorder;
+    private final RunStatusClassifier runStatusClassifier;
     private final RateLimiterRegistry rateLimiterRegistry;
+    /** Phase 5-C1：RTMP run 的运行时授权来源（独立 fixture，非 GT）。 */
+    private final RuntimeSessionContextProvider runtimeSessionContextProvider =
+            RtmpRuntimeScenarioProvider.load();
 
     public BenchmarkRunnerImpl(
             EvaluableAgent agent,
             MetricEvaluator evaluator,
             FailureAnalyzer failureAnalyzer,
             TraceRecorder traceRecorder,
+            RunStatusClassifier runStatusClassifier,
             RateLimiterRegistry rateLimiterRegistry) {
         this.agent = agent;
         this.evaluator = evaluator;
         this.failureAnalyzer = failureAnalyzer;
         this.traceRecorder = traceRecorder;
+        this.runStatusClassifier = runStatusClassifier;
         this.rateLimiterRegistry = rateLimiterRegistry;
     }
 
@@ -172,40 +186,99 @@ public class BenchmarkRunnerImpl implements BenchmarkRunner {
     }
 
     // ============================================================
-    //  executeAndCollectTrace — 驱动 Orchestrator + 构建 Trace
+    //  runRtmpCase / executeAndCollectTrace / driveAgent — 驱动 Orchestrator + 构建 Trace
     // ============================================================
 
     /**
-     * 为单个 TestCase 执行一次完整的 Orchestrator 调用，
-     * 并收集所有可观测数据构建 ExecutionTrace。
+     * 执行单个 RTMP 用例的 instrumentation run（Phase 1-B）。
      * <p>
-     * <b>测量内容：</b>
-     * <ul>
-     *   <li>TTFT — 第一个 Token 到达的时间</li>
-     *   <li>端到端延迟 — 从发出请求到 Flux complete</li>
-     *   <li>输出 Token 数 — 从 Flux 中统计 Token 数量</li>
-     *   <li>完整回答文本 — 拼接所有 Token，用于幻觉检测</li>
-     * </ul>
+     * 基于 experimentId / condition / caseId / repetition 生成 canonical RunIdentity，
+     * 保证 memoryId == runId，并返回本次 run 的 canonical {@link ExecutionTrace}。
+     */
+    @Override
+    public Mono<ExecutionTrace> runRtmpCase(RtmpTestCase testCase, BenchmarkConfig config,
+                                            ExperimentCondition condition, int repetition) {
+        return runRtmpCaseOutcome(testCase, config, condition, repetition)
+                .map(RtmpRunOutcome::trace);
+    }
+
+    /**
+     * 执行单个 RTMP 用例的 instrumentation run，并返回分类后的 Run Outcome（Phase 1-C）。
      * <p>
-     * <b>容错：</b>Orchestrator 调用失败时（如 CircuitBreaker 熔断、LLM 超时），
-     * 不会抛出异常终止整个 Flux，而是返回一个包含 {@code TIMEOUT} 状态的 EvalContext。
+     * 生成 canonical RunIdentity、驱动 Orchestrator 产出唯一 canonical Trace，
+     * 再基于 Trace 与驱动异常进行 {@link com.shopmind.evaluation.rtmp.RunStatus} 分类。
+     */
+    @Override
+    public Mono<RtmpRunOutcome> runRtmpCaseOutcome(RtmpTestCase testCase, BenchmarkConfig config,
+                                                   ExperimentCondition condition, int repetition) {
+        RunIdentity runIdentity = new RunIdentity(
+                config.experimentId(), condition.name(), testCase.id(), repetition);
+        return driveAgent(testCase.query(), runIdentity.memoryId(), config, runIdentity,
+                ExperimentRuntimeConfig.of(condition, testCase)
+                        .withRuntimeSessionContext(
+                                runtimeSessionContextProvider.resolve(testCase.id())))
+                .map(outcome -> new RtmpRunOutcome(
+                        outcome.trace(),
+                        runStatusClassifier.classify(outcome.trace(), outcome.error())));
+    }
+
+    /**
+     * 为单个 TestCase 执行一次完整的 Orchestrator 调用（legacy 入口，无 RunIdentity）。
      */
     private Mono<EvalContext> executeAndCollectTrace(TestCase testCase,
                                                       String isolationPrefix,
                                                       BenchmarkConfig config) {
-        // 生成隔离的 memoryId
-        String memoryId = isolationPrefix + testCase.testCaseId();
-        AgentInput input = new AgentInput(memoryId, testCase.query());
+        return executeAndCollectTrace(testCase, isolationPrefix, config, null);
+    }
 
-        // 创建 TraceHandle（请求级独立实例，无泄漏风险）
-        TraceRecorder.TraceHandle traceHandle = traceRecorder.createTrace(memoryId, config.workflowVersion());
-        ExecutionTrace trace = new ExecutionTrace(traceHandle.getTraceId(), memoryId, config.workflowVersion());
+    /**
+     * 为单个 TestCase 执行一次完整的 Orchestrator 调用（可携带 canonical RunIdentity）。
+     */
+    private Mono<EvalContext> executeAndCollectTrace(TestCase testCase,
+                                                      String isolationPrefix,
+                                                      BenchmarkConfig config,
+                                                      RunIdentity runIdentity) {
+        String memoryId = runIdentity != null
+                ? runIdentity.memoryId()
+                : isolationPrefix + testCase.testCaseId();
+        return driveAgent(testCase.query(), memoryId, config, runIdentity,
+                ExperimentRuntimeConfig.defaults())
+                .map(outcome -> new EvalContext(testCase, outcome.trace(), outcome.fullAnswer()));
+    }
+
+    /**
+     * 驱动 Orchestrator 执行一次 run，并围绕唯一 canonical {@link ExecutionTrace} 工作。
+     * <p>
+     * <b>Phase 1-B 关键约束：</b>
+     * <ul>
+     *   <li>只通过 {@code traceHandle.getExecutionTrace()} 获取唯一 Trace，禁止自行 new；</li>
+     *   <li>通过 Reactor Context 把同一 Trace 透传给 Agent runtime，使真实 Tool Call 能追加 ToolCallEvent；</li>
+     *   <li>save 使用同一 TraceHandle，保证 runtime mutation 与落盘是同一 instance。</li>
+     * </ul>
+     */
+    private Mono<RunOutcome> driveAgent(String query, String memoryId,
+                                        BenchmarkConfig config, RunIdentity runIdentity,
+                                        ExperimentRuntimeConfig runtimeConfig) {
+        // 创建 TraceHandle（请求级独立实例，无泄漏风险），并获取 canonical Trace
+        TraceRecorder.TraceHandle traceHandle = traceRecorder.createTrace(
+                memoryId, config.workflowVersion(), runIdentity);
+        ExecutionTrace trace = traceHandle.getExecutionTrace();
+
+        AgentInput input = new AgentInput(memoryId, query);
 
         // TTFT 计时器
         AtomicLong firstTokenAt = new AtomicLong(-1);
         long requestStart = System.currentTimeMillis();
 
+        // P2-0.5C: 设置 BenchmarkConfig 到 ThreadLocal，使 ChatModelAdapter 能读取真实实验参数
+        BenchmarkConfigHolder.set(config);
+
         return agent.chat(input)
+                // Phase 1-B: 把 canonical Trace 透传给 Orchestrator（runtime mutation 与 save 共用同一 instance）
+                // Phase 2: 同时透传 ExperimentRuntimeConfig（condition + ground truth），供 visibility/verifier 使用
+                .contextWrite(ctx -> ctx
+                        .put(ExecutionTrace.CONTEXT_KEY, trace)
+                        .put(ExperimentRuntimeConfig.CONTEXT_KEY, runtimeConfig))
                 // 记录 TTFT
                 .doOnNext(token -> firstTokenAt.compareAndSet(-1, System.currentTimeMillis()))
                 // 收集所有 Token 为完整字符串
@@ -224,31 +297,34 @@ public class BenchmarkRunnerImpl implements BenchmarkRunner {
 
                     // 将完整回答存入 TraceSpan，供下游 MetricEvaluator / FailureAnalyzer 消费
                     trace.addSpan(new TraceSpan("ANSWER_OUTPUT", elapsed,
-                            Map.of("query", testCase.query()),
+                            Map.of("query", query),
                             Map.of("answer", fullAnswer),
                             1.0));
 
                     // 标记 Trace 完成
                     trace.markComplete(ExecutionStatus.SUCCESS);
 
-                    log.debug("[Evaluation] Case {} completed: ttft={}ms, total={}ms, tokens={}",
-                            testCase.testCaseId(), ttft, elapsed, metrics.getCompletionTokens());
+                    log.debug("[Evaluation] Run {} completed: ttft={}ms, total={}ms, tokens={}",
+                            trace.getRunId(), ttft, elapsed, metrics.getCompletionTokens());
 
-                    return new EvalContext(testCase, trace, fullAnswer);
+                    return new RunOutcome(trace, fullAnswer, null);
                 })
-                // 失败路径：Orchestrator 异常时包装为带 TIMEOUT 的 Context
+                // 失败路径：Orchestrator 异常时包装为失败结果
                 .onErrorResume(error -> {
-                    log.warn("[Evaluation] Orchestrator failed for case {}: {}",
-                            testCase.testCaseId(), error.getMessage());
+                    log.warn("[Evaluation] Orchestrator failed for run {}: {}",
+                            trace.getRunId(), error.getMessage());
 
                     long elapsed = System.currentTimeMillis() - requestStart;
                     trace.markComplete(ExecutionStatus.FAILED);
                     trace.getMetrics().setTtftMs(elapsed);
 
-                    return Mono.just(new EvalContext(testCase, trace, "[ORCHESTRATOR_ERROR] " + error.getMessage()));
+                    return Mono.just(new RunOutcome(trace, "[ORCHESTRATOR_ERROR] " + error.getMessage(), error));
                 })
-                // 确保 Trace 落盘（全路径覆盖：complete / error / cancel）
-                .doFinally(signalType -> traceRecorder.save(traceHandle).subscribe());
+                // 确保 Trace 落盘成为响应式链的一部分（而非 fire-and-forget），
+                // 使 block() 返回时 save 已同步完成，避免下游读取落盘数据时出现竞态。
+                .flatMap(outcome -> traceRecorder.save(traceHandle).thenReturn(outcome))
+                // 清理 ThreadLocal（全路径覆盖：complete / error / cancel）
+                .doFinally(signalType -> BenchmarkConfigHolder.clear());
     }
 
     // ============================================================
@@ -280,7 +356,8 @@ public class BenchmarkRunnerImpl implements BenchmarkRunner {
                 metrics.completionTokens(),
                 resolvedReason,
                 snippet,
-                metrics.rawMetrics()
+                metrics.rawMetrics(),
+                ctx.testCase.expectedFailureReason()  // P2-0.5B: 传入预期失败原因
         );
     }
 
@@ -336,4 +413,10 @@ public class BenchmarkRunnerImpl implements BenchmarkRunner {
             return this;
         }
     }
+
+    /**
+     * 一次 run 的原始结果：canonical Trace + 完整回答文本 + 驱动异常（可为 null）。
+     * 供 RTMP 单用例 run（返回 Trace / RunOutcome）与 legacy run（包装为 EvalContext）共用。
+     */
+    private record RunOutcome(ExecutionTrace trace, String fullAnswer, Throwable error) {}
 }

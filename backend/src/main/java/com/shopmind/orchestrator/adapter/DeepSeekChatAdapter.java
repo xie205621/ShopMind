@@ -2,6 +2,8 @@ package com.shopmind.orchestrator.adapter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shopmind.evaluation.domain.BenchmarkConfig;
+import com.shopmind.evaluation.pipeline.BenchmarkConfigHolder;
 import com.shopmind.mcp.model.ParameterSpec;
 import com.shopmind.mcp.model.ToolSpecification;
 import com.shopmind.memory.message.ChatMessage;
@@ -56,6 +58,7 @@ public class DeepSeekChatAdapter implements ChatModelPort {
     private final ObjectMapper objectMapper;
     private final String apiKey;
     private final String model;
+    private final Integer seed;  // FR2 修复：seed 参数用于提升可复现性
 
     /** 累积 tool_calls 的 arguments（跨 SSE chunks 拼接） */
     private final ThreadLocal<StringBuilder> toolCallAccumulator = ThreadLocal.withInitial(StringBuilder::new);
@@ -63,12 +66,14 @@ public class DeepSeekChatAdapter implements ChatModelPort {
     public DeepSeekChatAdapter(
             ObjectMapper objectMapper,
             @Value("${shopmind.llm.deepseek.api-key:}") String apiKey,
-            @Value("${shopmind.llm.deepseek.chat-model:deepseek-v4-flash}") String model) {
+            @Value("${shopmind.llm.deepseek.chat-model:deepseek-v4-flash}") String model,
+            @Value("${shopmind.llm.deepseek.seed:}") Integer seed) {
         this.objectMapper = objectMapper;
         // Spring 未注入时从环境变量兜底
         this.apiKey = (apiKey == null || apiKey.isBlank())
                 ? System.getenv("DEEPSEEK_API_KEY") : apiKey;
         this.model = model;
+        this.seed = seed;
         this.webClient = WebClient.builder()
                 .baseUrl(BASE_URL)
                 .clientConnector(new ReactorClientHttpConnector(
@@ -84,6 +89,11 @@ public class DeepSeekChatAdapter implements ChatModelPort {
             log.info("[DeepSeek] ChatAdapter initialized: model={}, apiKey={}...***",
                     model, apiKey.substring(0, Math.min(5, apiKey.length())));
         }
+    }
+
+    @Override
+    public String modelName() {
+        return model;
     }
 
     @Override
@@ -248,7 +258,14 @@ public class DeepSeekChatAdapter implements ChatModelPort {
     private Map<String, Object> buildRequestBody(List<ChatMessage> messages,
                                                   List<ToolSpecification> tools) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", model);
+
+        // P2-0.5C: 优先从 BenchmarkConfig（单一事实源）读取，降级到 application.yml
+        BenchmarkConfig config = BenchmarkConfigHolder.get();
+        String effectiveModel = (config != null && config.llmProvider() != null)
+                ? config.llmProvider() : model;
+        double effectiveTemperature = (config != null) ? config.temperature() : 0.1;
+
+        body.put("model", effectiveModel);
         body.put("stream", true);
 
         // messages
@@ -269,8 +286,25 @@ public class DeepSeekChatAdapter implements ChatModelPort {
             body.put("tools", toolDefs);
         }
 
-        // 防止 DeepSeek 过度自由发挥
-        body.put("temperature", 0.1);
+        // P2-0.5C: temperature 从 BenchmarkConfig 读取（不再硬编码）
+        body.put("temperature", effectiveTemperature);
+
+        // P2-0.5C: topP 从 BenchmarkConfig 读取并发送（DeepSeek OpenAI 兼容 API 支持）
+        if (config != null) {
+            body.put("top_p", config.topP());
+        }
+
+        // P2-0.5C: maxTokens 从 BenchmarkConfig 读取并发送
+        if (config != null && config.maxTokens() != null) {
+            body.put("max_tokens", config.maxTokens());
+        }
+
+        // P2-0.5C: seed 优先从 BenchmarkConfig 读取，降级到 application.yml
+        Integer effectiveSeed = (config != null && config.seed() != null)
+                ? config.seed() : seed;
+        if (effectiveSeed != null) {
+            body.put("seed", effectiveSeed);
+        }
 
         return body;
     }

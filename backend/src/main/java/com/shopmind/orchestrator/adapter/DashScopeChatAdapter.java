@@ -2,6 +2,8 @@ package com.shopmind.orchestrator.adapter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shopmind.evaluation.domain.BenchmarkConfig;
+import com.shopmind.evaluation.pipeline.BenchmarkConfigHolder;
 import com.shopmind.mcp.model.ParameterSpec;
 import com.shopmind.mcp.model.ToolSpecification;
 import com.shopmind.memory.message.ChatMessage;
@@ -76,6 +78,11 @@ public class DashScopeChatAdapter implements ChatModelPort {
             log.info("[DashScope] ChatAdapter initialized: model={}, apiKey={}...***",
                     model, apiKey.substring(0, Math.min(4, apiKey.length())));
         }
+    }
+
+    @Override
+    public String modelName() {
+        return model;
     }
 
     @Override
@@ -243,7 +250,14 @@ public class DashScopeChatAdapter implements ChatModelPort {
     private Map<String, Object> buildRequestBody(List<ChatMessage> messages,
                                                   List<ToolSpecification> tools) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", model);
+
+        // P2-0.5C: 优先从 BenchmarkConfig（单一事实源）读取，降级到 application.yml
+        BenchmarkConfig config = BenchmarkConfigHolder.get();
+        String effectiveModel = (config != null && config.llmProvider() != null)
+                ? config.llmProvider() : model;
+        double effectiveTemperature = (config != null) ? config.temperature() : 0.1;
+
+        body.put("model", effectiveModel);
 
         // input.messages
         Map<String, Object> input = new LinkedHashMap<>();
@@ -260,6 +274,22 @@ public class DashScopeChatAdapter implements ChatModelPort {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("result_format", "message");
         params.put("incremental_output", true);
+
+        // P2-0.5C: temperature 从 BenchmarkConfig 读取（不再硬编码）
+        params.put("temperature", effectiveTemperature);
+
+        // P2-0.5C: topP 从 BenchmarkConfig 读取并发送（DashScope API 支持）
+        if (config != null) {
+            params.put("top_p", config.topP());
+        }
+
+        // P2-0.5C: maxTokens 从 BenchmarkConfig 读取并发送（DashScope API 支持）
+        if (config != null && config.maxTokens() != null) {
+            params.put("max_tokens", config.maxTokens());
+        }
+
+        // P2-0.5C: Qwen (DashScope) 不支持 seed 参数，明确记录
+        // seed 仅在 BenchmarkConfig 中记录，不发送到 DashScope API
 
         // tools → function calling
         if (tools != null && !tools.isEmpty()) {

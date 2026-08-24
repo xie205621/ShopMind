@@ -1,6 +1,9 @@
 package com.shopmind.workflow.port;
 
+import com.shopmind.workflow.domain.ToolRule;
 import com.shopmind.workflow.domain.WorkflowInstance;
+
+import java.util.List;
 
 /**
  * 工作流渲染器接口 — Workflow_Engine.md §7.2 规范。
@@ -22,7 +25,6 @@ import com.shopmind.workflow.domain.WorkflowInstance;
  *
  * @see WorkflowInstance
  */
-@FunctionalInterface
 public interface WorkflowRenderer {
 
     /**
@@ -50,4 +52,18 @@ public interface WorkflowRenderer {
      * @return 渲染后的完整 Prompt 字符串
      */
     String render(WorkflowInstance instance);
+
+    /**
+     * 将 WorkflowInstance 渲染为 LLM 可消费的 Prompt 字符串，但【可用工具】段
+     * 只渲染 {@code visibleToolRules}（拆分渲染，供 P4-3 双入口同步使用）。
+     * <p>
+     * <b>双入口一致性：</b>System Prompt 的【可用工具】与 Function Calling 的 tools 参数
+     * 必须由同一份 visibleTools 驱动；本方法允许调用方把裁剪后的工具规则传入渲染器，
+     * 而不在渲染器内部再次计算可见性。
+     *
+     * @param instance          工作流运行时实例（含定义 + 运行时数据）
+     * @param visibleToolRules  可见工具规则（已按 visibleTools 过滤）
+     * @return 渲染后的完整 Prompt 字符串（工具段仅含 visibleToolRules）
+     */
+    String render(WorkflowInstance instance, List<ToolRule> visibleToolRules);
 }

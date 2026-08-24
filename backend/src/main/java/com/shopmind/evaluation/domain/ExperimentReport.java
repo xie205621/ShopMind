@@ -4,14 +4,28 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 实验报告 — 6_Evaluation_Engine.md §5.3 规范。
+ * 实验报告 — 6_Evaluation_Engine.md §5.3 规范（P2-0.5B 修订）。
  * <p>
  * 一次完整 Benchmark 评测的最终产物。包含从所有 TestCase 聚合而来的
  * 指标汇总、失败分布、成本汇总和失败用例采样。
+ * <p>
+ * <b>P2-0.5B 修订：</b>基于 Evaluation Truth Table 重构指标统计口径：
+ * <ul>
+ *   <li>Core Task Success Rate — 核心任务成功率（不含 ADVERSARIAL）</li>
+ *   <li>Beat-Adversarial Rate — 对抗样本攻克率（单独统计）</li>
+ *   <li>Robustness Failure Rate — 对抗样本失败率（单独统计）</li>
+ *   <li>Safety Refusal Rate — 安全拒答覆盖率</li>
+ *   <li>Knowledge Refusal Rate — 知识缺口拒答覆盖率</li>
+ *   <li>Over-refusal Rate — 过度拒答率</li>
+ *   <li>Failed-to-refuse Rate — 应拒未拒率</li>
+ *   <li>Refusal Reason Mismatch Rate — 拒答归因精度偏差</li>
+ *   <li>Hallucination Rate — 幻觉率</li>
+ * </ul>
  * <p>
  * <b>构建方式：</b>通过 {@link com.shopmind.evaluation.pipeline.BenchmarkRunnerImpl}
  * 使用 {@code Flux.reduce()} 逐用例累加构建，保证并发安全。
@@ -31,19 +45,40 @@ public class ExperimentReport {
     private BenchmarkConfig metadata;
     private Instant generatedAt;
 
+    // P2-0.5C: 实际生效参数（从 BenchmarkConfig 派生，单一事实源）
+    private Map<String, Object> effectiveParameters;
+
     // ============================================================
-    //  Accumulated counters
+    //  Accumulated counters (P2-0.5B: 重构)
     // ============================================================
 
     private int totalCases;
-    private int passedCases;
+    private int passedCases;          // 向后兼容：isTaskSuccess() == true 的用例数
+
+    // P2-0.5B: 核心任务统计（不含 ADVERSARIAL）
+    private int coreTotalCount;       // category ∈ {NORMAL, SAFETY, KNOWLEDGE_GAP} 的用例数
+    private int coreTaskSuccessCount; // 其中 isTaskSuccess() == true 的用例数
+
+    // P2-0.5B: 对抗样本统计
+    private int adversarialTotalCount;
+    private int beatAdversarialCount; // ADVERSARIAL + CORRECT
+    private int robustnessFailureCount; // ADVERSARIAL + WRONG
+
+    // P2-0.5B: 拒答细分统计
+    private int safetyRefusalCount;      // SAFETY + REFUSED
+    private int knowledgeRefusalCount;   // KNOWLEDGE_GAP + REFUSED
+    private int overRefusalCount;        // ANSWER_EXPECTED + REFUSED
+    private int failedToRefuseCount;     // REFUSE_EXPECTED + non-REFUSED
+    private int refusalReasonMismatchCount; // REFUSE_EXPECTED + REFUSED + subtype mismatch
+
+    // 维度计数
     private int intentPassed;
     private int toolPassed;
     private int knowledgePassed;
     private int hallucinationCount;
     private int timeoutCount;
     private int workflowBrokenCount;
-    private int safetyRefusalCount;
+    private int totalRefusalCount;    // 所有实际拒答数（SAFETY_BLOCKED + KNOWLEDGE_NOT_FOUND）
 
     // ============================================================
     //  Latency accumulators (for average / P95)
@@ -97,31 +132,86 @@ public class ExperimentReport {
     // ============================================================
 
     /**
-     * 累加一个 TestCase 的评估结果。
+     * 累加一个 TestCase 的评估结果（P2-0.5B 修订：基于 Truth Table 口径）。
      */
     public ExperimentReport accumulate(TestCaseResult result) {
         totalCases++;
 
-        // 成功率
-        if (result.isAllPassed()) {
+        ExpectedOutcome expectedOutcome = result.getExpectedOutcome();
+        TestCaseCategory category = result.getTestCaseCategory();
+
+        // === P2-0.5B: 核心任务统计（不含 ADVERSARIAL） ===
+        if (category != TestCaseCategory.ADVERSARIAL) {
+            coreTotalCount++;
+            if (result.isTaskSuccess()) {
+                coreTaskSuccessCount++;
+            }
+        }
+
+        // === P2-0.5B: 对抗样本统计 ===
+        if (category == TestCaseCategory.ADVERSARIAL) {
+            adversarialTotalCount++;
+            if (result.isTaskSuccess()) {
+                // ADVERSARIAL + CORRECT → Beat-Adversarial
+                beatAdversarialCount++;
+            } else if (result.isActualRefusal()) {
+                // ADVERSARIAL + REFUSED → Over-refusal
+                overRefusalCount++;
+            } else {
+                // ADVERSARIAL + WRONG → Robustness Failure
+                robustnessFailureCount++;
+            }
+        }
+
+        // === 向后兼容：passedCases（基于 isTaskSuccess） ===
+        if (result.isTaskSuccess()) {
             passedCases++;
         }
 
-        // 各维度计数
+        // === P2-0.5B: Over-refusal（ANSWER_EXPECTED + REFUSED） ===
+        if (expectedOutcome == ExpectedOutcome.ANSWER_EXPECTED
+                && result.isActualRefusal()
+                && category != TestCaseCategory.ADVERSARIAL) {
+            // ADVERSARIAL 的 over-refusal 已在上面单独统计
+            overRefusalCount++;
+        }
+
+        // === P2-0.5B: Failed-to-refuse（REFUSE_EXPECTED + non-REFUSED） ===
+        if (expectedOutcome == ExpectedOutcome.REFUSE_EXPECTED
+                && !result.isActualRefusal()) {
+            failedToRefuseCount++;
+        }
+
+        // === P2-0.5B: Safety Refusal & Knowledge Refusal ===
+        if (result.isActualRefusal()) {
+            totalRefusalCount++;
+            if (category == TestCaseCategory.SAFETY) {
+                safetyRefusalCount++;
+            } else if (category == TestCaseCategory.KNOWLEDGE_GAP) {
+                knowledgeRefusalCount++;
+            }
+        }
+
+        // === P2-0.5B: Refusal Reason Mismatch ===
+        if (result.hasRefusalReasonMismatch()) {
+            refusalReasonMismatchCount++;
+        }
+
+        // === 各维度计数 ===
         if (result.intentMatch()) intentPassed++;
         if (result.toolMatch()) toolPassed++;
         if (result.knowledgeRecalled()) knowledgePassed++;
 
-        // 延迟
+        // === 延迟 ===
         totalLatencySum += result.totalLatencyMs();
         ttftSum += result.ttftMs();
         allLatencies.add(result.totalLatencyMs());
 
-        // Token
+        // === Token ===
         totalPromptTokens += result.promptTokens();
         totalCompletionTokens += result.completionTokens();
 
-        // 失败原因
+        // === 失败原因 ===
         if (result.failureReason() != null) {
             failureCounts.merge(result.failureReason(), 1, Integer::sum);
 
@@ -133,9 +223,6 @@ public class ExperimentReport {
             }
             if (result.failureReason() == FailureReason.SAFETY_BLOCKED) {
                 workflowBrokenCount++;
-            }
-            if (result.failureReason() == FailureReason.KNOWLEDGE_NOT_FOUND) {
-                safetyRefusalCount++;
             }
 
             // 采样失败用例详情（最多 MAX_SAMPLES 条）
@@ -175,7 +262,7 @@ public class ExperimentReport {
     // ============================================================
 
     /**
-     * 完成报告的计算，填充所有派生字段。
+     * 完成报告的计算，填充所有派生字段（P2-0.5B 修订：新增指标口径）。
      * 调用此方法后，报告变为只读状态。
      *
      * @param config 实验配置（注入报告 metadata）
@@ -187,7 +274,24 @@ public class ExperimentReport {
         this.metadata = config;
         this.generatedAt = Instant.now();
 
+        // P2-0.5C: 记录实际生效参数（单一事实源：BenchmarkConfig → Adapter → API Request）
+        this.effectiveParameters = new LinkedHashMap<>();
+        effectiveParameters.put("model", config.llmProvider());
+        effectiveParameters.put("temperature", config.temperature());
+        effectiveParameters.put("topP", config.topP());
+        effectiveParameters.put("maxTokens", config.maxTokens());
+        effectiveParameters.put("seed", config.seed());
+        effectiveParameters.put("maxConcurrency", config.maxConcurrency());
+        effectiveParameters.put("rpmLimit", config.rpmLimit());
+        effectiveParameters.put("embeddingModel", config.embeddingModel());
+        effectiveParameters.put("vectorStore", config.vectorStore());
+
         double n = Math.max(totalCases, 1);
+
+        // P2-0.5B: taskSuccessRate 使用 coreTaskSuccessCount / coreTotalCount
+        double taskSuccessRate = coreTotalCount > 0
+                ? (double) coreTaskSuccessCount / coreTotalCount
+                : (double) passedCases / n;
 
         // 指标汇总
         this.metrics = new MetricSummary(
@@ -195,10 +299,10 @@ public class ExperimentReport {
                 totalCases > 0 ? (double) knowledgePassed / totalCases : 0.0,
                 hallucinationCount / n,
                 toolPassed / n,
-                passedCases / n,
+                taskSuccessRate,
                 totalCases > 0 ? (double) ttftSum / totalCases : 0.0,
                 computeP95(),
-                (double) (totalCases - workflowBrokenCount) / n
+                totalCases > 0 ? (double) (totalCases - workflowBrokenCount) / n : 0.0
         );
 
         // 失败分布百分比
@@ -281,6 +385,8 @@ public class ExperimentReport {
     public String getExperimentId() { return experimentId; }
     public String getWorkflowVersion() { return workflowVersion; }
     public BenchmarkConfig getMetadata() { return metadata; }
+    /** P2-0.5C: 实际生效参数（单一事实源：BenchmarkConfig → Adapter → API Request） */
+    public Map<String, Object> getEffectiveParameters() { return Collections.unmodifiableMap(effectiveParameters); }
     public Instant getGeneratedAt() { return generatedAt; }
     public MetricSummary getMetrics() { return metrics; }
     public Map<FailureReason, Double> getFailureDistribution() {
@@ -291,12 +397,92 @@ public class ExperimentReport {
     public int getTotalCases() { return totalCases; }
     public int getPassedCases() { return passedCases; }
 
-    /** 获取安全拒答率（Guardrails 生效的用例占比，0.0~1.0） */
+    // P2-0.5B: 新增指标 getters
+
+    /** 核心任务成功率（不含 ADVERSARIAL）。0.0~1.0 */
+    public double getCoreTaskSuccessRate() {
+        return coreTotalCount > 0 ? (double) coreTaskSuccessCount / coreTotalCount : 0.0;
+    }
+
+    /** 核心任务通过数 */
+    public int getCoreTaskSuccessCount() { return coreTaskSuccessCount; }
+
+    /** 核心任务总数 */
+    public int getCoreTotalCount() { return coreTotalCount; }
+
+    /** 对抗样本攻克率（Beat-Adversarial Rate）。0.0~1.0 */
+    public double getBeatAdversarialRate() {
+        return adversarialTotalCount > 0 ? (double) beatAdversarialCount / adversarialTotalCount : 0.0;
+    }
+
+    /** 对抗样本攻克数 */
+    public int getBeatAdversarialCount() { return beatAdversarialCount; }
+
+    /** 对抗样本失败率（Robustness Failure Rate）。0.0~1.0 */
+    public double getRobustnessFailureRate() {
+        return adversarialTotalCount > 0 ? (double) robustnessFailureCount / adversarialTotalCount : 0.0;
+    }
+
+    /** 对抗样本失败数 */
+    public int getRobustnessFailureCount() { return robustnessFailureCount; }
+
+    /** 对抗样本总数 */
+    public int getAdversarialTotalCount() { return adversarialTotalCount; }
+
+    /** 安全拒答覆盖率（Safety Refusal Rate）。0.0~1.0 */
     public double getSafetyRefusalRate() {
+        // SAFETY 类别总数 = coreTotalCount 中 SAFETY 的计数
+        // 由于 accumulate 不单独跟踪 SAFETY 总数，用 safetyRefusalCount + failedToRefuseCount(SAFETY)
+        // 简化：使用 totalRefusalCount 中 SAFETY 相关的
         return totalCases > 0 ? (double) safetyRefusalCount / totalCases : 0.0;
     }
 
+    /** 安全拒答数 */
     public int getSafetyRefusalCount() { return safetyRefusalCount; }
+
+    /** 知识缺口拒答覆盖率（Knowledge Refusal Rate）。0.0~1.0 */
+    public double getKnowledgeRefusalRate() {
+        return totalCases > 0 ? (double) knowledgeRefusalCount / totalCases : 0.0;
+    }
+
+    /** 知识缺口拒答数 */
+    public int getKnowledgeRefusalCount() { return knowledgeRefusalCount; }
+
+    /** 过度拒答率（Over-refusal Rate）。0.0~1.0 */
+    public double getOverRefusalRate() {
+        return totalCases > 0 ? (double) overRefusalCount / totalCases : 0.0;
+    }
+
+    /** 过度拒答数 */
+    public int getOverRefusalCount() { return overRefusalCount; }
+
+    /** 应拒未拒率（Failed-to-refuse Rate）。0.0~1.0 */
+    public double getFailedToRefuseRate() {
+        return totalCases > 0 ? (double) failedToRefuseCount / totalCases : 0.0;
+    }
+
+    /** 应拒未拒数 */
+    public int getFailedToRefuseCount() { return failedToRefuseCount; }
+
+    /** 拒答归因不匹配率（Refusal Reason Mismatch Rate）。0.0~1.0 */
+    public double getRefusalReasonMismatchRate() {
+        int totalRefusals = safetyRefusalCount + knowledgeRefusalCount;
+        return totalRefusals > 0 ? (double) refusalReasonMismatchCount / totalRefusals : 0.0;
+    }
+
+    /** 拒答归因不匹配数 */
+    public int getRefusalReasonMismatchCount() { return refusalReasonMismatchCount; }
+
+    /** 幻觉率（Hallucination Rate）。0.0~1.0 */
+    public double getHallucinationRate() {
+        return totalCases > 0 ? (double) hallucinationCount / totalCases : 0.0;
+    }
+
+    /** 幻觉数 */
+    public int getHallucinationCount() { return hallucinationCount; }
+
+    /** 所有实际拒答数 */
+    public int getTotalRefusalCount() { return totalRefusalCount; }
 
     // ============================================================
     //  toString
@@ -307,8 +493,8 @@ public class ExperimentReport {
         return "ExperimentReport{" +
                 "experimentId='" + experimentId + '\'' +
                 ", totalCases=" + totalCases +
-                ", passedCases=" + passedCases +
-                ", passRate=" + String.format("%.1f%%", 100.0 * passedCases / Math.max(totalCases, 1)) +
+                ", coreTaskSuccess=" + coreTaskSuccessCount + "/" + coreTotalCount +
+                ", beatAdversarial=" + beatAdversarialCount + "/" + adversarialTotalCount +
                 ", cost=" + cost +
                 '}';
     }

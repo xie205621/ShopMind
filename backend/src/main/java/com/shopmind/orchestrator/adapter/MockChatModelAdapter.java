@@ -27,6 +27,11 @@ public class MockChatModelAdapter implements ChatModelPort {
     private static final String TOOL_RESULT_MARKER = "[工具执行结果:";
 
     @Override
+    public String modelName() {
+        return "mock";
+    }
+
+    @Override
     public Flux<String> stream(List<ChatMessage> messages, List<ToolSpecification> tools) {
         // 获取最后一条用户消息
         String lastUserMsg = extractLastUserMessage(messages);

@@ -3,6 +3,8 @@ package com.shopmind.api;
 import com.shopmind.orchestrator.domain.ChatStreamEvent;
 import com.shopmind.orchestrator.domain.OrchestrationRequest;
 import com.shopmind.orchestrator.port.ChatStreamingPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,6 +25,8 @@ import java.util.UUID;
 @CrossOrigin(origins = "*")
 public class ChatController {
 
+    private static final Logger log = LoggerFactory.getLogger(ChatController.class);
+
     private final ChatStreamingPort chatStreamingPort;
 
     public ChatController(ChatStreamingPort chatStreamingPort) {
@@ -42,6 +46,11 @@ public class ChatController {
 
         OrchestrationRequest orchestrationRequest = new OrchestrationRequest(memoryId, request.query());
         return chatStreamingPort.stream(orchestrationRequest)
-                .map(event -> ServerSentEvent.<ChatStreamEvent>builder(event).build());
+                .map(event -> ServerSentEvent.<ChatStreamEvent>builder(event).build())
+                .onErrorResume(e -> {
+                    log.error("[ChatController] Orchestration stream failed, degrading to error event.", e);
+                    ChatStreamEvent error = new ChatStreamEvent.Error("LLM_ERROR", "系统遇到了一个意外错误，请稍后重试。");
+                    return Flux.just(ServerSentEvent.<ChatStreamEvent>builder(error).build());
+                });
     }
 }

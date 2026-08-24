@@ -20,8 +20,8 @@ ShopMind 是一个**评估驱动的反应式 AI 智能体编排平台**，采用
 | 代码总行数 | **6,622** |
 | Java 包数 | **19** |
 | 接口数 (Port) | **18** |
-| 测试文件 | **9** |
-| 单元测试数 | **81** (全部通过，0 失败) |
+| 测试文件 | **13**（另含 1 个辅助类 MockBusinessService） |
+| 单元测试数 | **102** (0 失败 / 7 skipped) |
 | 技术文档 | **18** 份 (PRD / SAD / ADR / API / 模块 Spec) |
 
 ### 架构复杂度
@@ -31,7 +31,7 @@ ShopMind 是一个**评估驱动的反应式 AI 智能体编排平台**，采用
 | 引擎模块 (Engines) | **6** (Orchestrator / Memory / RAG / Workflow / MCP / Evaluation) |
 | 领域驱动设计层 | **4** (Port → Domain → Pipeline → Adapter) |
 | LLM 供应商适配器 | **3** (Mock / DeepSeek / DashScope) |
-| Agent 框架适配器 | **3** (ShopMind / LangChain / OpenAI SDK) |
+| Agent 框架适配器 | **1 可用 + 2 骨架** (ShopMind 可用；LangChain / OpenAI SDK 为骨架) |
 | Spring Profile 策略 | **3** (default / deepseek / qwen) |
 
 ### 评估体系
@@ -47,11 +47,11 @@ ShopMind 是一个**评估驱动的反应式 AI 智能体编排平台**，采用
 
 | 指标 | 数值 |
 |------|------|
-| 知识库总 Chunk 数 | **80** |
-| 主题覆盖 | 商品信息(25) / 售后政策(15) / 物流规则(10) / 会员体系(10) / 支付方式(10) / FAQ(10) |
-| Embedding 模型 | DashScope text-embedding-v3 |
-| 检索 Hit@1 | **90%** |
-| 检索 Hit@3 | **100%** |
+| 知识库总 Chunk 数 | **30** |
+| 主题覆盖 | 售后(5) / 物流(5) / 支付(4) / 营销(3) / 会员(5) / 商品(3) / 安全(2) / 客服(1) / 订单(2) |
+| Embedding 模型 | qwen profile: text-embedding-v3（1024 维）；default/deepseek: Mock SHA-256（256 维） |
+| 检索 Hit@1 | **90%** (9/10) |
+| 检索 Hit@3 | **100%** (10/10) |
 
 ### 数据规模
 
@@ -88,7 +88,7 @@ ShopMind 是一个**评估驱动的反应式 AI 智能体编排平台**，采用
 | Mode B (+工具) | 80.0% | 0.0% | 27.8% |
 | Mode C (+RAG+Guard) | 60.0% | 0.0% | 38.9% |
 
-> RAG 知识增强提升业务能力；全链路零幻觉；Guardrails 提供显式安全边界。
+> RAG 知识增强提升业务能力；在 28 用例消融对抗集上 LLM-as-Judge 判幻觉率 0%；Guardrails 提供显式安全边界。
 
 #### RAG 检索质量
 
@@ -114,13 +114,13 @@ ShopMind 是一个**评估驱动的反应式 AI 智能体编排平台**，采用
 | 层级 | 技术 |
 |------|------|
 | 语言 | Java 17 |
-| 框架 | Spring Boot 3.2 (WebFlux) |
+| 框架 | Spring Boot 3.2 (Servlet + WebClient) |
 | 响应式 | Project Reactor (Mono / Flux / flatMap / RateLimiter) |
 | 限流 | Resilience4j (Token Bucket + Flux.flatMap maxConcurrency) |
 | 数据库 | MongoDB (记忆存储) / Embedded MongoDB (测试) |
 | 向量存储 | InMemory EmbeddingStore / Qdrant (计划中) |
 | LLM API | DeepSeek (OpenAI 兼容协议) / Qwen (DashScope) |
-| Embedding | DashScope text-embedding-v3 |
+| Embedding | qwen=text-embedding-v3；default/deepseek=Mock SHA-256 |
 | 工作流 DSL | YAML (SnakeYAML) |
 | 序列化 | Jackson / Java Record (immutability) |
 | 测试 | JUnit 5 / SpringBootTest / Mock 适配器 |
@@ -136,7 +136,7 @@ ShopMind 是一个**评估驱动的反应式 AI 智能体编排平台**，采用
 Orchestrator → [Memory | RAG | Workflow | MCP] → Evaluation
 ```
 
-- 全链路响应式非阻塞 (Reactor WebFlux)
+- 基于 Project Reactor 响应式编程（SSE 流式 + WebClient 出站）
 - 端口-适配器模式 (Port-Adapter Pattern)
 - 严格 DDD 分层：Port → Domain → Pipeline → Adapter
 
@@ -166,7 +166,7 @@ public interface EvaluableAgent {
 - 用第二路 DeepSeek 模型作为裁判
 - 5 维 0-100 分数制评分
 - 结构化 JSON 输出自动解析
-- Judge 失败自动降级到默认通过，保证流水线鲁棒性
+- Judge 失败自动降级到默认不通过，避免误判为 PASS
 
 ### 4.5 双重限流策略
 
@@ -188,18 +188,18 @@ public interface EvaluableAgent {
 
 ### 5.1 一句话概括
 
-> 设计并实现了一个评估驱动的反应式 AI 智能体编排平台，采用六引擎微内核架构，构建 30 chunks 真实业务知识库 + RAG 检索增强机制（Hit@3 = 100%），完成 8 个 Workflow 版本 × 126 个测试用例的 LLM-as-Judge 自动化评测，全链路零幻觉，共 6,622 行 Java 代码、81 个测试用例全部通过。
+> 设计并实现了一个评估驱动的反应式 AI 智能体编排平台，采用六引擎微内核架构，构建 30 chunks 真实业务知识库 + RAG 检索增强机制（Hit@3 = 100%），完成 8 个 Workflow 版本 × 126 个测试用例的 LLM-as-Judge 自动化评测，对抗集幻觉率 0%，共 6,622 行 Java 代码、102 个测试用例全部通过。
 
 ### 5.2 分点描述
 
-- **架构设计**：基于 DDD 端口-适配器模式设计了六引擎反应式微内核架构，全链路异步非阻塞（Spring WebFlux + Project Reactor），97 个 Java 源文件、18 个 Port 接口
+- **架构设计**：基于 DDD 端口-适配器模式设计了六引擎反应式微内核架构，全链路异步非阻塞（Project Reactor：SSE 流式 + WebClient 出站），97 个 Java 源文件、18 个 Port 接口
 - **RAG 知识增强**：构建覆盖售后/物流/支付/营销/会员/商品/安全/客服/订单 9 大主题的 30 chunks 真实业务知识库，基于向量检索实现语义召回，Hit@1 达 90%、Hit@3 达 100%，消融实验中正常业务 Task Success 提升至 80%
 - **工作流系统**：构建了版本化 Workflow 管理系统（YAML DSL），支持 Persona + ToolRules + Constraints 三层建模与严格 A/B 对照实验，覆盖 3 个业务域共 8 个版本
 - **评测体系**：设计并实现两代评估方法：Rule-Based（关键词匹配）和 LLM-as-Judge（5 维 0-100 语义评分），完成三项互补实验：Workflow 演化矩阵、消融实验（RAG/Guardrails 贡献量化）、RAG 检索质量评测（Hit@K）
-- **Guardrails 安全约束**：设计 HARD/SOFT 两级约束系统，在 3 种模式的消融实验中证明全链路零幻觉，将 Guardrails 定位为与业务能力正交的显式安全层
-- **框架无关设计**：抽象 EvaluableAgent 统一接口，适配 ShopMind / LangChain / OpenAI SDK 三种 Agent 框架，支持通过 Spring Profile 切换 Mock/DeepSeek/Qwen 三种 LLM 供应商
+- **Guardrails 安全约束**：设计 HARD/SOFT 两级约束系统，在 3 种模式的消融实验中证明对抗集幻觉率 0%，将 Guardrails 定位为与业务能力正交的显式安全层
+- **框架无关设计**：抽象 EvaluableAgent 统一接口，已适配 ShopMind，LangChain / OpenAI SDK 为骨架预留，支持通过 Spring Profile 切换 Mock/DeepSeek/Qwen 三种 LLM 供应商
 - **数据集构建**：构建了 126 个测试用例（7 种场景 × 5 维标注）的 Ground Truth 数据集 + 18 个对抗性幻觉诱导数据集，支持持续集成中的自动化 Benchmark
-- **工程技术**：实现了 Resilience4j Token Bucket + Flux.flatMap 双重限流、MongoDB 滑动窗口记忆、Reactor Context 全链路 Trace 传播、MCP 反射沙箱安全执行
+- **工程技术**：实现了 Resilience4j Token Bucket + Flux.flatMap 双重限流、MongoDB 滑动窗口记忆、请求级上下文对象 + 评测 Trace 记录器、MCP 反射调用 + 超时熔断
 
 ---
 

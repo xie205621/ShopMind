@@ -1,0 +1,62 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: shopmind-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: shopmind
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - shopmind
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+    container_name: shopmind-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      # profile：default(Mock) / qwen / deepseek，通过 .env 或 shell 环境变量指定
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+      # 通过服务名访问 MongoDB，不依赖 localhost
+      MONGODB_URI: mongodb://mongodb:27017/shopmind
+      # LLM API Key 通过环境变量注入，不写死在 Compose / Dockerfile
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      QWEN_CHAT_MODEL: ${QWEN_CHAT_MODEL:-qwen-plus}
+      QWEN_EMBEDDING_MODEL: ${QWEN_EMBEDDING_MODEL:-text-embedding-v3}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_CHAT_MODEL: ${DEEPSEEK_CHAT_MODEL:-deepseek-v4-flash}
+    ports:
+      - "8080:8080"
+    networks:
+      - shopmind
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: shopmind-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - shopmind
+
+volumes:
+  mongodb_data:
+
+networks:
+  shopmind:
+    driver: bridge

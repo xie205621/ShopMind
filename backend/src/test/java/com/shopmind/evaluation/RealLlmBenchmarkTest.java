@@ -19,6 +19,7 @@ import com.shopmind.evaluation.pipeline.InMemoryTraceRecorder;
 import com.shopmind.evaluation.port.EvaluableAgent;
 import com.shopmind.evaluation.port.FailureAnalyzer;
 import com.shopmind.evaluation.port.MetricEvaluator;
+import com.shopmind.evaluation.rtmp.RunStatusClassifier;
 import com.shopmind.knowledge.model.KnowledgeChunk;
 import com.shopmind.memory.message.ChatMessage;
 import com.shopmind.memory.message.SystemMessage;
@@ -686,7 +687,7 @@ class RealLlmBenchmarkTest {
             EvaluableAgent agent = new ShopMindAgentAdapter(
                     orchestrator, "shopmind-deepseek", wf.version());
             BenchmarkRunnerImpl runner = new BenchmarkRunnerImpl(
-                    agent, metricEvaluator, failureAnalyzer, tr, registry);
+                    agent, metricEvaluator, failureAnalyzer, tr, new RunStatusClassifier(), registry);
 
             long wfStart = System.currentTimeMillis();
             ExperimentReport report = runner.run(
@@ -792,10 +793,10 @@ class RealLlmBenchmarkTest {
                 experimentId, version, "ablation_v2.0",
                 "deepseek-v4-flash", 0.1, 0.9,
                 "text-embedding-v3", "InMemory",
-                1, 10);
+                1, 10, null, null);
 
         BenchmarkRunnerImpl runner = new BenchmarkRunnerImpl(
-                agent, metricEvaluator, failureAnalyzer, tr,
+                agent, metricEvaluator, failureAnalyzer, tr, new RunStatusClassifier(),
                 RateLimiterRegistry.of(RateLimiterConfig.custom()
                         .limitForPeriod(10)
                         .limitRefreshPeriod(Duration.ofMinutes(1))
@@ -1446,7 +1447,8 @@ class RealLlmBenchmarkTest {
                 "deepseek-v4-flash", 0.1, 0.9,
                 "text-embedding-v3", "InMemory",
                 2,  // 降低并发，因为 LLM-as-Judge 会额外消耗 API 速率
-                10  // RPM limit
+                10,  // RPM limit
+                null, null
         );
     }
 }

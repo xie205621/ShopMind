@@ -21,6 +21,7 @@ import com.shopmind.evaluation.pipeline.InMemoryTraceRecorder;
 import com.shopmind.evaluation.pipeline.RuleBasedMetricEvaluator;
 import com.shopmind.evaluation.pipeline.SimpleFailureAnalyzer;
 import com.shopmind.evaluation.port.EvaluableAgent;
+import com.shopmind.evaluation.rtmp.RunStatusClassifier;
 import com.shopmind.orchestrator.port.AgentOrchestrator;
 import com.shopmind.workflow.domain.WorkflowDefinition;
 import com.shopmind.workflow.pipeline.WorkflowDefinitionLoader;
@@ -109,7 +110,8 @@ class EvaluationBenchmarkTest {
         AgentOrchestrator mockOrchestrator = createMockOrchestrator();
         EvaluableAgent evaluableAgent = new ShopMindAgentAdapter(
                 mockOrchestrator, "shopmind-mock", "test");
-        runner = new BenchmarkRunnerImpl(evaluableAgent, metricEvaluator, failureAnalyzer, traceRecorder, registry);
+        runner = new BenchmarkRunnerImpl(evaluableAgent, metricEvaluator, failureAnalyzer, traceRecorder,
+                new RunStatusClassifier(), registry);
 
         // Phase D: 从 JSON 数据集加载全部 120+ 用例（7 个场景合并）
         dataset = DatasetLoader.loadAllMerged(DATASET_VERSION);
@@ -122,7 +124,7 @@ class EvaluationBenchmarkTest {
                 workflowDef.version(),
                 "benchmark_" + DATASET_VERSION,
                 "qwen-max", 0.1, 0.9,
-                "bge-m3", "InMemory", 5, 60
+                "bge-m3", "InMemory", 5, 60, null, null
         );
     }
 
@@ -203,7 +205,8 @@ class EvaluationBenchmarkTest {
 
             EvaluableAgent agent = new ShopMindAgentAdapter(
                     createMockOrchestrator(), "shopmind-mock", "test");
-            BenchmarkRunnerImpl r = new BenchmarkRunnerImpl(agent, metricEvaluator, failureAnalyzer, tr, registry);
+            BenchmarkRunnerImpl r = new BenchmarkRunnerImpl(agent, metricEvaluator, failureAnalyzer, tr,
+                    new RunStatusClassifier(), registry);
 
             long start = System.currentTimeMillis();
             ExperimentReport report = r.run(dataset, cfg, cfg.toIsolationPrefix()).block();
@@ -240,7 +243,7 @@ class EvaluationBenchmarkTest {
                 wf.version(),
                 "benchmark_" + DATASET_VERSION,
                 "qwen-max", 0.1, 0.9,
-                "bge-m3", "InMemory", 5, 60
+                "bge-m3", "InMemory", 5, 60, null, null
         );
     }
 
