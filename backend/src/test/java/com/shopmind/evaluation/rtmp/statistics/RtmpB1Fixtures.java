@@ -47,7 +47,7 @@ final class RtmpB1Fixtures {
                                    RtmpCaseEvaluation evaluation, RunStatus status,
                                    List<ControlOverheadEvent> controls) {
         return new RtmpRawRecord(
-                runId(condition, caseId, repetition), EXP, condition, caseId, repetition,
+                runId(condition, caseId, repetition), EXP, condition, caseId, repetition, 0,
                 "query-" + caseId, "SAFE_LOW_RISK", expectedOutcome, expectedToolAction,
                 List.of(), List.of(), controls,
                 evaluation, status, null, null);

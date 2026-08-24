@@ -33,6 +33,7 @@ import java.util.List;
  * @param condition             实验条件（BASELINE_A / BASELINE_B / METHOD_C）
  * @param caseId                用例标识（如 RTMP-001）
  * @param repetition            repetition 序号
+ * @param conditionOrderIndex   本 case/repetition 内 condition 的执行顺序索引（0/1/2）
  * @param query                 用户查询
  * @param taskCategory          任务类别（{@link com.shopmind.evaluation.rtmp.RtmpTaskCategory} name）
  * @param expectedOutcome       Ground Truth 预期结果（ANSWER_EXPECTED / REFUSE_EXPECTED）
@@ -51,6 +52,7 @@ public record RtmpRawRecord(
         String condition,
         String caseId,
         int repetition,
+        int conditionOrderIndex,
         String query,
         String taskCategory,
         String expectedOutcome,
@@ -74,16 +76,26 @@ public record RtmpRawRecord(
     }
 
     /**
-     * 从 canonical sources 构建 Raw record。
-     *
-     * @param trace          canonical Raw {@link ExecutionTrace}（必须非 null）
-     * @param evaluation     B2 case-level evaluation（invalid run 可为 null）
-     * @param status         {@link RunStatus} 分类结果
-     * @param testCase       Ground Truth（提供 query / taskCategory / expectedOutcome / expectedToolAction）
-     * @param invalidReason  invalid/retryable 原因（VALID 为 null）
+     * 从 canonical sources 构建 Raw record（无 execution-order provenance，默认 index=0）。
      */
     public static RtmpRawRecord of(ExecutionTrace trace, RtmpCaseEvaluation evaluation,
                                    RunStatus status, RtmpTestCase testCase, String invalidReason) {
+        return of(trace, evaluation, status, testCase, invalidReason, 0);
+    }
+
+    /**
+     * 从 canonical sources 构建 Raw record（含 execution-order provenance）。
+     *
+     * @param trace                canonical Raw {@link ExecutionTrace}（必须非 null）
+     * @param evaluation           B2 case-level evaluation（invalid run 可为 null）
+     * @param status               {@link RunStatus} 分类结果
+     * @param testCase             Ground Truth（提供 query / taskCategory / expectedOutcome / expectedToolAction）
+     * @param invalidReason        invalid/retryable 原因（VALID 为 null）
+     * @param conditionOrderIndex  本 case/repetition 内 condition 的执行顺序索引（0/1/2）
+     */
+    public static RtmpRawRecord of(ExecutionTrace trace, RtmpCaseEvaluation evaluation,
+                                   RunStatus status, RtmpTestCase testCase, String invalidReason,
+                                   int conditionOrderIndex) {
         RunIdentity identity = trace != null ? trace.getRunIdentity() : null;
         String runId = identity != null ? identity.runId()
                 : (evaluation != null ? evaluation.runId() : null);
@@ -97,7 +109,7 @@ public record RtmpRawRecord(
                 : (evaluation != null ? evaluation.repetition() : 0);
 
         return new RtmpRawRecord(
-                runId, experimentId, condition, caseId, repetition,
+                runId, experimentId, condition, caseId, repetition, conditionOrderIndex,
                 testCase != null ? testCase.query() : null,
                 testCase != null ? testCase.taskCategory().name() : null,
                 testCase != null ? testCase.expectedOutcome() : null,
@@ -111,3 +123,4 @@ public record RtmpRawRecord(
                 RtmpRawRuntimeMetrics.from(trace != null ? trace.getMetrics() : null));
     }
 }
+        

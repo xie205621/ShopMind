@@ -247,8 +247,8 @@ public class DashScopeChatAdapter implements ChatModelPort {
     //  请求体构建
     // ============================================================
 
-    private Map<String, Object> buildRequestBody(List<ChatMessage> messages,
-                                                  List<ToolSpecification> tools) {
+    Map<String, Object> buildRequestBody(List<ChatMessage> messages,
+                                         List<ToolSpecification> tools) {
         Map<String, Object> body = new LinkedHashMap<>();
 
         // P2-0.5C: 优先从 BenchmarkConfig（单一事实源）读取，降级到 application.yml

@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -111,6 +112,36 @@ public final class RtmpExperimentPersistence {
         Path target = outputDir.resolve("comparison.json");
         atomicWrite(target, toJson(comparison));
         return target;
+    }
+
+    // ============================================================
+    //  Output collision preflight（B5）
+    // ============================================================
+
+    /**
+     * Experiment-level output collision preflight（Phase 5-E1 / B5）。
+     * <p>
+     * 正式 runner 启动前检查目标输出（{@code {experimentId}_raw.json} /
+     * {@code {experimentId}_summary.json} / {@code comparison.json}）是否已存在；
+     * 只要任意 canonical output 已存在即抛异常拒绝启动，<b>不</b> REPLACE_EXISTING、
+     * <b>不</b>自动覆盖、<b>不</b>静默删除、<b>不</b>自动换目录。
+     */
+    public static void assertOutputsDoNotExist(String experimentId, Path outputDir) {
+        List<Path> outputs = List.of(
+                outputDir.resolve(experimentId + "_raw.json"),
+                outputDir.resolve(experimentId + "_summary.json"),
+                outputDir.resolve("comparison.json"));
+        List<String> existing = new ArrayList<>();
+        for (Path p : outputs) {
+            if (Files.exists(p)) {
+                existing.add(p.getFileName().toString());
+            }
+        }
+        if (!existing.isEmpty()) {
+            throw new IllegalStateException(
+                    "Output collision detected for experiment '" + experimentId + "': "
+                            + existing + ". Refusing to overwrite existing experiment outputs.");
+        }
     }
 
     // ============================================================
