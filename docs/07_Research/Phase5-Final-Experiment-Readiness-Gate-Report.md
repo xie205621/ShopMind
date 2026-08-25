@@ -15,7 +15,7 @@
 
 **Final Decision：`READY FOR FORMAL EXPERIMENT`。**
 
-- **Code / protocol / execution layer：PASS**（§2–§12 全部通过；`mvn test` 436 run / 0 fail / 0 error / 7 skipped 全绿）。
+- **Code / protocol / execution layer：PASS**（§2–§12 全部通过；`mvn test` 441 run / 0 fail / 0 error / 7 skipped 全绿）。
 - **启动前环境 / 运行核验（全部确认）：**
   - `QWEN_API_KEY` = PRESENT（`SpringContextReadinessCheckTest` 5/5 通过，`embed()` 不再抛 `not configured`）
   - Mongo = OK（`localhost:27017` ping 返回 `ok:1`）
@@ -40,11 +40,12 @@
 |---|---|
 | Repository | xie205621/ShopMind |
 | Branch | `main`（`Your branch is up to date with 'origin/main'`） |
-| HEAD | `816dfe10f7d835c17c1af32bfd5796ab5bf7ef83`（`fix: Phase 5 R6.1 crash consistency and ledger validation`） |
-| working tree | ✅ clean（`body.json` 已删除；12 个 line-ending-only 变更已 `git restore` 回退；仅剩未跟踪 Gate 报告 + readiness 测试，未 commit） |
+| HEAD | `946929e88d827fe3ce83435bf270a962ab708c80`（`Phase 5 Final Experiment Readiness Gate: READY FOR FORMAL EXPERIMENT`） |
+| working tree | ✅ clean（`git status --short` 为空，无未提交修改） |
+| 本 commit 新增文件 | ✅ `Phase5-Final-Experiment-Readiness-Gate-Report.md`（Gate 报告）+ `SpringContextReadinessCheckTest.java`（readiness 测试），均已 tracked |
 | R6.1 相关文件 | ✅ 均已纳入 HEAD（`RtmpAttemptLedgerStore.java` / `RtmpAttemptLedgerValidationTest.java` / `RtmpRetryAttemptCrashConsistencyTest.java` / R6.1 报告均已 `git ls-files` 确认 tracked） |
 
-> 前置动作：`body.json` 已删除；12 个 line-ending-only 变更已回退（`git diff --numstat` 确认 239+/239− 对称换行 churn 后 `git restore`）。当前 `git status` 仅剩未跟踪 Gate 报告 + readiness 测试，`git diff` 为空。
+> 版本核验：`body.json` 已删除、12 个 line-ending-only 变更已回退（在 commit `816dfe1` 阶段完成）。本 commit `946929e` 相对 `816dfe1` 仅新增上述 2 个文件，GitHub diff 已确认；当前 `git status` 为空（working tree clean）。
 
 ---
 
@@ -170,9 +171,9 @@ plan validation → output collision check → ChatMemoryStore check → config 
 
 | 项目 | 目标 | 结果 |
 |---|---|---|
-| Git version clean | clean | ✅ `body.json` 已删除，12 个 line-ending 变更已回退；仅剩未跟踪 Gate 报告 + readiness 测试（未 commit） |
-| current commit identified | SHA | ✅ `816dfe1` |
-| mvn test green | 0 fail/error | ✅ 436 run / 0 fail / 0 error / 7 skipped（BUILD SUCCESS，用户已运行） |
+| Git version clean | clean | ✅ working tree clean（`git status --short` 为空），Gate 报告 + readiness 测试已 tracked |
+| current commit identified | SHA | ✅ `946929e` |
+| mvn test green | 0 fail/error | ✅ 441 run / 0 fail / 0 error / 7 skipped（BUILD SUCCESS） |
 | dataset = 42 | 42 | ✅ |
 | runtime fixture = 42 | 42 | ✅ |
 | plan = 378 | 378 | ✅ |
@@ -214,9 +215,9 @@ plan validation → output collision check → ChatMemoryStore check → config 
 
 **FINAL READINESS STATUS：`READY FOR FORMAL EXPERIMENT`。**
 
-代码 / 协议 / 执行层已 PASS（§2–§12；`mvn test` 436 run / 0 fail / 0 error / 7 skipped 全绿）。启动前环境 / 运行核验也已全部确认：
+代码 / 协议 / 执行层已 PASS（§2–§12；`mvn test` 441 run / 0 fail / 0 error / 7 skipped 全绿）。启动前环境 / 运行核验也已全部确认：
 
-1. working tree cleanup ✅（`body.json` 已删除、12 个 line-ending-only 变更已回退；仅剩未跟踪 Gate 报告 + readiness 测试，待 commit）。
+1. working tree cleanup ✅（`body.json` 已删除、12 个 line-ending-only 变更已回退；Gate 报告 + readiness 测试已 commit 并 tracked，working tree clean）。
 2. `QWEN_API_KEY` presence ✅ PRESENT（`SpringContextReadinessCheckTest` 5/5，`embed()` 不再抛 `not configured`）。
 3. Mongo connectivity ✅ OK（`localhost:27017` ping 返回 `ok:1`）。
 
@@ -228,7 +229,7 @@ plan validation → output collision check → ChatMemoryStore check → config 
 
 本阶段为只读验收 + 环境核验，已完成全部代码/配置/协议审阅与只读 dry validation。**立即停止，不执行 Real LLM、Pilot 或 378 runs，不继续修改生产代码。**
 
-**Full regression（用户已运行）**：`mvn test` = 436 run / 0 failures / 0 errors / 7 skipped，`BUILD SUCCESS`。Skipped=7 为既有 disabled tests（非本阶段引入）。
+**Full regression**：`mvn test` = 441 run / 0 failures / 0 errors / 7 skipped，`BUILD SUCCESS`。Skipped=7 为既有 disabled tests（非本阶段引入）。
 
 ---
 
@@ -239,13 +240,13 @@ plan validation → output collision check → ChatMemoryStore check → config 
 | # | 前置条件 | 状态 |
 |---|---|---|
 | 1 | 删除 `body.json` | ✅ 已删除 |
-| 2 | `git status` = clean | ✅ 已回退（仅剩未跟踪 Gate 报告 + readiness 测试，`git diff` 为空） |
+| 2 | `git status` = clean | ✅ working tree clean（`git status --short` 为空），Gate 报告 + readiness 测试已 tracked |
 | 3 | `QWEN_API_KEY` = PRESENT | ✅ PRESENT（`SpringContextReadinessCheckTest` 5/5，`embed()` 不再抛 `not configured`） |
 | 4 | Mongo reachable | ✅ OK（`SpringContextReadinessCheckTest` 直连 `localhost:27017` ping 返回 `ok:1`） |
 | 5 | `MONGODB_URI` 已确认 | ✅ 默认 `mongodb://localhost:27017/shopmind` 已确认可达 |
 | 6 | 不存在 `RTMP-EXP01_*` 正式输出 | ✅ 已确认（全库 grep 无匹配） |
 | 7 | checkpoint / ledger 不存在旧正式实验状态 | ✅ 已确认（`RTMP-EXP01_checkpoint.jsonl` / `RTMP-EXP01_attempt-ledger.jsonl` 均不存在） |
-| 8 | 保持当前 commit `816dfe1...` | ✅ 已确认 |
+| 8 | 保持当前 commit `946929e...` | ✅ 已确认 |
 
 全部前置已确认，本报告最终结论为 **`READY FOR FORMAL EXPERIMENT`**；随后第一次执行 canonical command 即意味着 Formal Experiment 正式开始。
 
