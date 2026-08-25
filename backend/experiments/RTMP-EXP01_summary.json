@@ -1,0 +1,550 @@
+{
+  "schemaVersion" : "rtmp-b4-summary-v1",
+  "sourceExperimentId" : "RTMP-EXP01",
+  "sourceRawPattern" : "RTMP-EXP01_raw.json",
+  "generatedAt" : "2026-08-25T14:18:27.276712900Z",
+  "conditions" : [ {
+    "condition" : "BASELINE_A",
+    "totalRuns" : 126,
+    "validCount" : 126,
+    "invalidCount" : 0,
+    "retryableCount" : 0,
+    "l1" : {
+      "positive" : 2,
+      "eligible" : 126,
+      "rate" : 0.015873015873015872
+    },
+    "l2" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "l3" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "safetyIntervention" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "coreTaskEligibleN" : 90,
+    "coreTaskPositive" : 45,
+    "coreTaskSuccessRate" : 0.5,
+    "coreTaskProtocolN" : 30,
+    "overRefusal" : {
+      "positive" : 37,
+      "eligible" : 90,
+      "rate" : 0.4111111111111111
+    },
+    "verifierOverhead" : {
+      "controlType" : "SAFETY_VERIFIER",
+      "invocationCount" : 0,
+      "totalLatencyMs" : 0,
+      "totalPromptTokens" : null,
+      "totalCompletionTokens" : null,
+      "totalTokens" : null,
+      "totalCost" : null
+    },
+    "routerOverhead" : {
+      "controlType" : "RTMP_ROUTER",
+      "invocationCount" : 0,
+      "totalLatencyMs" : 0,
+      "totalPromptTokens" : null,
+      "totalCompletionTokens" : null,
+      "totalTokens" : null,
+      "totalCost" : null
+    },
+    "runtimeTotals" : {
+      "totalLatencyMs" : 701740,
+      "ttftMs" : 31019,
+      "toolLatencyMs" : 50,
+      "promptTokens" : 0,
+      "completionTokens" : 18227
+    },
+    "subgroups" : [ {
+      "name" : "HIGH_RISK",
+      "primary" : true,
+      "totalRuns" : 42,
+      "validCount" : 42,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 42,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 7,
+        "eligible" : 18,
+        "rate" : 0.3888888888888889
+      },
+      "overRefusal" : {
+        "positive" : 5,
+        "eligible" : 18,
+        "rate" : 0.2777777777777778
+      }
+    }, {
+      "name" : "MULTI_TOOL",
+      "primary" : true,
+      "totalRuns" : 18,
+      "validCount" : 18,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 18,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 13,
+        "eligible" : 18,
+        "rate" : 0.7222222222222222
+      },
+      "overRefusal" : {
+        "positive" : 3,
+        "eligible" : 18,
+        "rate" : 0.16666666666666666
+      }
+    }, {
+      "name" : "AMBIGUOUS",
+      "primary" : true,
+      "totalRuns" : 12,
+      "validCount" : 12,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 12,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 0,
+        "eligible" : 0,
+        "rate" : null
+      },
+      "overRefusal" : {
+        "positive" : 0,
+        "eligible" : 0,
+        "rate" : null
+      }
+    }, {
+      "name" : "SAFE_LOW_RISK",
+      "primary" : false,
+      "totalRuns" : 24,
+      "validCount" : 24,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 24,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 12,
+        "eligible" : 24,
+        "rate" : 0.5
+      },
+      "overRefusal" : {
+        "positive" : 12,
+        "eligible" : 24,
+        "rate" : 0.5
+      }
+    }, {
+      "name" : "TOOL_DISTRACTOR",
+      "primary" : false,
+      "totalRuns" : 18,
+      "validCount" : 18,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 18,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 7,
+        "eligible" : 18,
+        "rate" : 0.3888888888888889
+      },
+      "overRefusal" : {
+        "positive" : 11,
+        "eligible" : 18,
+        "rate" : 0.6111111111111112
+      }
+    }, {
+      "name" : "OVER_REFUSAL_BOUNDARY",
+      "primary" : false,
+      "totalRuns" : 12,
+      "validCount" : 12,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 12,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 6,
+        "eligible" : 12,
+        "rate" : 0.5
+      },
+      "overRefusal" : {
+        "positive" : 6,
+        "eligible" : 12,
+        "rate" : 0.5
+      }
+    } ]
+  }, {
+    "condition" : "BASELINE_B",
+    "totalRuns" : 126,
+    "validCount" : 126,
+    "invalidCount" : 0,
+    "retryableCount" : 0,
+    "l1" : {
+      "positive" : 4,
+      "eligible" : 126,
+      "rate" : 0.031746031746031744
+    },
+    "l2" : {
+      "positive" : 1,
+      "eligible" : 126,
+      "rate" : 0.007936507936507936
+    },
+    "l3" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "safetyIntervention" : {
+      "positive" : 4,
+      "eligible" : 126,
+      "rate" : 0.031746031746031744
+    },
+    "coreTaskEligibleN" : 90,
+    "coreTaskPositive" : 41,
+    "coreTaskSuccessRate" : 0.45555555555555555,
+    "coreTaskProtocolN" : 30,
+    "overRefusal" : {
+      "positive" : 41,
+      "eligible" : 90,
+      "rate" : 0.45555555555555555
+    },
+    "verifierOverhead" : {
+      "controlType" : "SAFETY_VERIFIER",
+      "invocationCount" : 60,
+      "totalLatencyMs" : 0,
+      "totalPromptTokens" : null,
+      "totalCompletionTokens" : null,
+      "totalTokens" : null,
+      "totalCost" : null
+    },
+    "routerOverhead" : {
+      "controlType" : "RTMP_ROUTER",
+      "invocationCount" : 0,
+      "totalLatencyMs" : 0,
+      "totalPromptTokens" : null,
+      "totalCompletionTokens" : null,
+      "totalTokens" : null,
+      "totalCost" : null
+    },
+    "runtimeTotals" : {
+      "totalLatencyMs" : 667002,
+      "ttftMs" : 30308,
+      "toolLatencyMs" : 26,
+      "promptTokens" : 0,
+      "completionTokens" : 17561
+    },
+    "subgroups" : [ {
+      "name" : "HIGH_RISK",
+      "primary" : true,
+      "totalRuns" : 42,
+      "validCount" : 42,
+      "l2" : {
+        "positive" : 1,
+        "eligible" : 42,
+        "rate" : 0.023809523809523808
+      },
+      "coreTaskSuccess" : {
+        "positive" : 7,
+        "eligible" : 18,
+        "rate" : 0.3888888888888889
+      },
+      "overRefusal" : {
+        "positive" : 6,
+        "eligible" : 18,
+        "rate" : 0.3333333333333333
+      }
+    }, {
+      "name" : "MULTI_TOOL",
+      "primary" : true,
+      "totalRuns" : 18,
+      "validCount" : 18,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 18,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 12,
+        "eligible" : 18,
+        "rate" : 0.6666666666666666
+      },
+      "overRefusal" : {
+        "positive" : 3,
+        "eligible" : 18,
+        "rate" : 0.16666666666666666
+      }
+    }, {
+      "name" : "AMBIGUOUS",
+      "primary" : true,
+      "totalRuns" : 12,
+      "validCount" : 12,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 12,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 0,
+        "eligible" : 0,
+        "rate" : null
+      },
+      "overRefusal" : {
+        "positive" : 0,
+        "eligible" : 0,
+        "rate" : null
+      }
+    }, {
+      "name" : "SAFE_LOW_RISK",
+      "primary" : false,
+      "totalRuns" : 24,
+      "validCount" : 24,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 24,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 11,
+        "eligible" : 24,
+        "rate" : 0.4583333333333333
+      },
+      "overRefusal" : {
+        "positive" : 13,
+        "eligible" : 24,
+        "rate" : 0.5416666666666666
+      }
+    }, {
+      "name" : "TOOL_DISTRACTOR",
+      "primary" : false,
+      "totalRuns" : 18,
+      "validCount" : 18,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 18,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 7,
+        "eligible" : 18,
+        "rate" : 0.3888888888888889
+      },
+      "overRefusal" : {
+        "positive" : 11,
+        "eligible" : 18,
+        "rate" : 0.6111111111111112
+      }
+    }, {
+      "name" : "OVER_REFUSAL_BOUNDARY",
+      "primary" : false,
+      "totalRuns" : 12,
+      "validCount" : 12,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 12,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 4,
+        "eligible" : 12,
+        "rate" : 0.3333333333333333
+      },
+      "overRefusal" : {
+        "positive" : 8,
+        "eligible" : 12,
+        "rate" : 0.6666666666666666
+      }
+    } ]
+  }, {
+    "condition" : "METHOD_C",
+    "totalRuns" : 126,
+    "validCount" : 126,
+    "invalidCount" : 0,
+    "retryableCount" : 0,
+    "l1" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "l2" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "l3" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "safetyIntervention" : {
+      "positive" : 0,
+      "eligible" : 126,
+      "rate" : 0.0
+    },
+    "coreTaskEligibleN" : 90,
+    "coreTaskPositive" : 40,
+    "coreTaskSuccessRate" : 0.4444444444444444,
+    "coreTaskProtocolN" : 30,
+    "overRefusal" : {
+      "positive" : 43,
+      "eligible" : 90,
+      "rate" : 0.4777777777777778
+    },
+    "verifierOverhead" : {
+      "controlType" : "SAFETY_VERIFIER",
+      "invocationCount" : 0,
+      "totalLatencyMs" : 0,
+      "totalPromptTokens" : null,
+      "totalCompletionTokens" : null,
+      "totalTokens" : null,
+      "totalCost" : null
+    },
+    "routerOverhead" : {
+      "controlType" : "RTMP_ROUTER",
+      "invocationCount" : 187,
+      "totalLatencyMs" : 16,
+      "totalPromptTokens" : null,
+      "totalCompletionTokens" : null,
+      "totalTokens" : null,
+      "totalCost" : null
+    },
+    "runtimeTotals" : {
+      "totalLatencyMs" : 556056,
+      "ttftMs" : 29484,
+      "toolLatencyMs" : 30,
+      "promptTokens" : 0,
+      "completionTokens" : 13428
+    },
+    "subgroups" : [ {
+      "name" : "HIGH_RISK",
+      "primary" : true,
+      "totalRuns" : 42,
+      "validCount" : 42,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 42,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 8,
+        "eligible" : 18,
+        "rate" : 0.4444444444444444
+      },
+      "overRefusal" : {
+        "positive" : 6,
+        "eligible" : 18,
+        "rate" : 0.3333333333333333
+      }
+    }, {
+      "name" : "MULTI_TOOL",
+      "primary" : true,
+      "totalRuns" : 18,
+      "validCount" : 18,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 18,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 14,
+        "eligible" : 18,
+        "rate" : 0.7777777777777778
+      },
+      "overRefusal" : {
+        "positive" : 4,
+        "eligible" : 18,
+        "rate" : 0.2222222222222222
+      }
+    }, {
+      "name" : "AMBIGUOUS",
+      "primary" : true,
+      "totalRuns" : 12,
+      "validCount" : 12,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 12,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 0,
+        "eligible" : 0,
+        "rate" : null
+      },
+      "overRefusal" : {
+        "positive" : 0,
+        "eligible" : 0,
+        "rate" : null
+      }
+    }, {
+      "name" : "SAFE_LOW_RISK",
+      "primary" : false,
+      "totalRuns" : 24,
+      "validCount" : 24,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 24,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 4,
+        "eligible" : 24,
+        "rate" : 0.16666666666666666
+      },
+      "overRefusal" : {
+        "positive" : 20,
+        "eligible" : 24,
+        "rate" : 0.8333333333333334
+      }
+    }, {
+      "name" : "TOOL_DISTRACTOR",
+      "primary" : false,
+      "totalRuns" : 18,
+      "validCount" : 18,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 18,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 7,
+        "eligible" : 18,
+        "rate" : 0.3888888888888889
+      },
+      "overRefusal" : {
+        "positive" : 11,
+        "eligible" : 18,
+        "rate" : 0.6111111111111112
+      }
+    }, {
+      "name" : "OVER_REFUSAL_BOUNDARY",
+      "primary" : false,
+      "totalRuns" : 12,
+      "validCount" : 12,
+      "l2" : {
+        "positive" : 0,
+        "eligible" : 12,
+        "rate" : 0.0
+      },
+      "coreTaskSuccess" : {
+        "positive" : 7,
+        "eligible" : 12,
+        "rate" : 0.5833333333333334
+      },
+      "overRefusal" : {
+        "positive" : 2,
+        "eligible" : 12,
+        "rate" : 0.16666666666666666
+      }
+    } ]
+  } ]
+}
