@@ -243,6 +243,10 @@ public final class RtmpFormalExperimentRunner {
         int resumeCount = recovery.resumeCount();
 
         List<RtmpAttemptLedgerEvent> ledgerEvents = RtmpAttemptLedgerStore.load(ledgerFile);
+        List<String> ledgerErrors = RtmpAttemptLedgerStore.validate(ledgerEvents, experimentId, plan);
+        if (!ledgerErrors.isEmpty()) {
+            throw new IllegalStateException("Attempt ledger validation failed: " + ledgerErrors);
+        }
         Map<String, Integer> nextAttemptByRunId =
                 buildAttemptRecoveryMap(plan, completedRunIds, ledgerEvents);
 
@@ -253,11 +257,8 @@ public final class RtmpFormalExperimentRunner {
             } else {
                 RtmpTestCase testCase = dataset.findById(unit.caseId());
                 int nextAttempt = nextAttemptByRunId.getOrDefault(unit.runId(), 1);
-                ExecutedUnit executed = executeUnitDetailedRecorded(
-                        unit, testCase, config, defaultSource(), ledgerFile, nextAttempt);
-                RtmpExecutionCheckpoint cp = RtmpExecutionCheckpoint.of(
-                        executed.record(), executed.attempts(), resumeCount);
-                checkpointAndAppend(checkpointFile, cp, completedRunIds);
+                ExecutedUnit executed = executeUnitRecorded(unit, testCase, config, defaultSource(),
+                        ledgerFile, checkpointFile, nextAttempt, resumeCount, completedRunIds);
                 allRecords.add(executed.record());
             }
         }
@@ -333,17 +334,52 @@ public final class RtmpFormalExperimentRunner {
     /**
      * 对一个 canonical unit 执行（带 crash-safe attempt ledger），返回 Raw record + 实际 attempts。
      * <p>
-     * 从 {@code nextAttempt}（恢复时为已消耗 attempt 数 + 1）继续执行，保证任意
-     * crash/recovery 路径下 canonical run 最多 2 次真实 invocation。
+     * 关键写序（Phase 5-R6.1 问题 2）—— 对<b>最终 canonical attempt</b>：
+     * {@code STARTED → 真实 invocation → 构建 canonical RtmpRawRecord → checkpoint durable → COMPLETED durable}。
+     * 由此保证「COMPLETED(terminal) 已 fsync 但 canonical checkpoint 未 fsync」的丢失窗口不存在；
+     * 若 checkpoint 成功而 COMPLETED 前 crash，恢复时该 unit 已被视为 completed（skip）。
      */
-    ExecutedUnit executeUnitDetailedRecorded(RtmpFormalExperimentPlan.Unit unit, RtmpTestCase testCase,
-                                             BenchmarkConfig config, OutcomeSource source,
-                                             Path ledgerFile, int nextAttempt) {
+    ExecutedUnit executeUnitRecorded(RtmpFormalExperimentPlan.Unit unit, RtmpTestCase testCase,
+                                     BenchmarkConfig config, OutcomeSource source,
+                                     Path ledgerFile, Path checkpointFile,
+                                     int nextAttempt, int resumeCount, Set<String> completedRunIds) {
         ExperimentCondition condition = ExperimentCondition.valueOf(unit.condition());
-        RetryOutcome retry = runWithRetryRecorded(source, testCase, config, condition,
-                unit.repetition(), memoryStore, unit.memoryId(), config.experimentId(), unit,
-                ledgerFile, nextAttempt);
-        return new ExecutedUnit(buildRecord(retry.outcome(), testCase, unit), retry.attempts());
+        String experimentId = config.experimentId();
+
+        if (nextAttempt == 1) {
+            appendStarted(ledgerFile, experimentId, unit, 1);
+            RtmpRunOutcome first = source.execute(testCase, config, condition, unit.repetition());
+            if (RtmpRunRetryPolicy.shouldRetry(first.status())) {
+                // attempt1 非最终（RETRYABLE）：只写 COMPLETED(1)，不写 checkpoint
+                appendCompleted(ledgerFile, experimentId, unit, 1, first.status());
+                if (memoryStore != null) {
+                    memoryStore.deleteMessages(unit.memoryId());
+                }
+                // 最终 attempt2
+                appendStarted(ledgerFile, experimentId, unit, 2);
+                RtmpRunOutcome second = source.execute(testCase, config, condition, unit.repetition());
+                RtmpRawRecord record = buildRecord(second, testCase, unit);
+                appendCheckpoint(record, 2, resumeCount, checkpointFile, completedRunIds);
+                appendCompleted(ledgerFile, experimentId, unit, 2, second.status());
+                return new ExecutedUnit(record, 2);
+            }
+            // attempt1 即最终（terminal）
+            RtmpRawRecord record = buildRecord(first, testCase, unit);
+            appendCheckpoint(record, 1, resumeCount, checkpointFile, completedRunIds);
+            appendCompleted(ledgerFile, experimentId, unit, 1, first.status());
+            return new ExecutedUnit(record, 1);
+        }
+
+        // nextAttempt == 2：attempt1 已在中断前消耗，直接执行最终 attempt2
+        if (memoryStore != null) {
+            memoryStore.deleteMessages(unit.memoryId());
+        }
+        appendStarted(ledgerFile, experimentId, unit, 2);
+        RtmpRunOutcome second = source.execute(testCase, config, condition, unit.repetition());
+        RtmpRawRecord record = buildRecord(second, testCase, unit);
+        appendCheckpoint(record, 2, resumeCount, checkpointFile, completedRunIds);
+        appendCompleted(ledgerFile, experimentId, unit, 2, second.status());
+        return new ExecutedUnit(record, 2);
     }
 
     /** 从 final outcome 构建 canonical Raw record（VALID 才做 case evaluation）。 */
@@ -382,64 +418,28 @@ public final class RtmpFormalExperimentRunner {
         return new RetryOutcome(second, 2);
     }
 
-    /**
-     * Run-level retry 编排（带 crash-safe attempt ledger）— Phase 5-R6.1。
-     * <p>
-     * 与 {@link #runWithRetry} 的差异：每次真实 invocation 前写 {@code STARTED}、完成后写
-     * {@code COMPLETED + status}，使 process interruption 后可从 ledger 精确得知“哪些 attempt
-     * 已被消耗”，从而只执行 remaining attempt（{@code nextAttempt}）。
-     * <ul>
-     *   <li>{@code nextAttempt == 1}：fresh，attempt1 决定是否 retry（与 {@link #runWithRetry} 一致）；</li>
-     *   <li>{@code nextAttempt == 2}：attempt1 已在中断前消耗（crash mid-attempt1 或
-     *       attempt1 RETRYABLE），直接执行 attempt2，绝不回头执行 attempt1，也绝不 attempt3。</li>
-     * </ul>
-     * 返回的 {@code attempts} 即最后一个被执行 attempt 的序号（1 或 2）。
-     */
-    static RetryOutcome runWithRetryRecorded(OutcomeSource source, RtmpTestCase testCase,
-                                             BenchmarkConfig config, ExperimentCondition condition,
-                                             int repetition, ChatMemoryStore memoryStore,
-                                             String memoryId, String experimentId,
-                                             RtmpFormalExperimentPlan.Unit unit,
-                                             Path ledgerFile, int nextAttempt) {
-        RtmpRunOutcome outcome;
-        int attempt = nextAttempt;
-        if (attempt == 1) {
-            outcome = executeAttemptRecorded(source, testCase, config, condition, repetition,
-                    experimentId, unit, ledgerFile, 1);
-            if (RtmpRunRetryPolicy.shouldRetry(outcome.status())) {
-                if (memoryStore != null && memoryId != null) {
-                    memoryStore.deleteMessages(memoryId);
-                }
-                attempt = 2;
-                outcome = executeAttemptRecorded(source, testCase, config, condition, repetition,
-                        experimentId, unit, ledgerFile, 2);
-            }
-        } else {
-            // attempt1 已消耗：执行唯一的 remaining retry attempt。
-            if (memoryStore != null && memoryId != null) {
-                memoryStore.deleteMessages(memoryId);
-            }
-            outcome = executeAttemptRecorded(source, testCase, config, condition, repetition,
-                    experimentId, unit, ledgerFile, 2);
-        }
-        return new RetryOutcome(outcome, attempt);
-    }
-
-    /** 单次真实 invocation，前后分别持久化 {@code STARTED} / {@code COMPLETED + status}。 */
-    private static RtmpRunOutcome executeAttemptRecorded(OutcomeSource source, RtmpTestCase testCase,
-                                                         BenchmarkConfig config,
-                                                         ExperimentCondition condition, int repetition,
-                                                         String experimentId,
-                                                         RtmpFormalExperimentPlan.Unit unit,
-                                                         Path ledgerFile, int attempt) {
+    /** 持久化 attempt {@code STARTED}（真实 invocation 前）。 */
+    private static void appendStarted(Path ledgerFile, String experimentId,
+                                      RtmpFormalExperimentPlan.Unit unit, int attempt) {
         RtmpAttemptLedgerStore.append(ledgerFile, RtmpAttemptLedgerEvent.started(
                 experimentId, unit.runId(), unit.caseId(), unit.condition(),
                 unit.repetition(), attempt));
-        RtmpRunOutcome outcome = source.execute(testCase, config, condition, repetition);
+    }
+
+    /** 持久化 attempt {@code COMPLETED + status}（真实 invocation 后）。 */
+    private static void appendCompleted(Path ledgerFile, String experimentId,
+                                        RtmpFormalExperimentPlan.Unit unit, int attempt,
+                                        RunStatus status) {
         RtmpAttemptLedgerStore.append(ledgerFile, RtmpAttemptLedgerEvent.completed(
                 experimentId, unit.runId(), unit.caseId(), unit.condition(),
-                unit.repetition(), attempt, outcome.status()));
-        return outcome;
+                unit.repetition(), attempt, status));
+    }
+
+    /** 构建 canonical checkpoint 并落盘（拒绝 same runId 重复；最终 attempt 的 COMPLETED 前调用）。 */
+    private void appendCheckpoint(RtmpRawRecord record, int attempts, int resumeCount,
+                                  Path checkpointFile, Set<String> completedRunIds) {
+        RtmpExecutionCheckpoint cp = RtmpExecutionCheckpoint.of(record, attempts, resumeCount);
+        checkpointAndAppend(checkpointFile, cp, completedRunIds);
     }
 
     /**

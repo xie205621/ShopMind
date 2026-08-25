@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,12 +63,12 @@ class RtmpRetryAttemptCrashConsistencyTest {
         assertEquals(2, nextAttempt(unit), "attempt1 RETRYABLE 后 resume 应执行 attempt2");
 
         AtomicInteger calls = new AtomicInteger();
-        RtmpFormalExperimentRunner.RetryOutcome out = runWithRetryRecorded(
-                unit, tc, countingSource(calls, RunStatus.VALID), 2);
+        RtmpFormalExperimentRunner.ExecutedUnit executed = executeRecorded(
+                unit, tc, countingSource(calls, RunStatus.VALID, validTrace(unit)), 2);
 
         assertEquals(1, calls.get(), "resume 只执行 attempt2，绝不重跑 attempt1");
-        assertEquals(2, out.attempts());
-        assertEquals(RunStatus.VALID, out.outcome().status());
+        assertEquals(2, executed.attempts());
+        assertEquals(RunStatus.VALID, executed.record().status());
     }
 
     // ============================================================
@@ -84,12 +85,12 @@ class RtmpRetryAttemptCrashConsistencyTest {
         assertEquals(2, nextAttempt(unit), "STARTED 无 COMPLETED 的 attempt 已消耗");
 
         AtomicInteger calls = new AtomicInteger();
-        RtmpFormalExperimentRunner.RetryOutcome out = runWithRetryRecorded(
-                unit, tc, countingSource(calls, RunStatus.VALID), 2);
+        RtmpFormalExperimentRunner.ExecutedUnit executed = executeRecorded(
+                unit, tc, countingSource(calls, RunStatus.VALID, validTrace(unit)), 2);
 
         assertEquals(1, calls.get());
-        assertEquals(2, out.attempts());
-        assertEquals(RunStatus.VALID, out.outcome().status());
+        assertEquals(2, executed.attempts());
+        assertEquals(RunStatus.VALID, executed.record().status());
     }
 
     // ============================================================
@@ -105,12 +106,12 @@ class RtmpRetryAttemptCrashConsistencyTest {
         writeLedger(started(unit, 1));
 
         AtomicInteger calls = new AtomicInteger();
-        RtmpFormalExperimentRunner.RetryOutcome out = runWithRetryRecorded(
-                unit, tc, countingSource(calls, RunStatus.RETRYABLE_FAILURE), 2);
+        RtmpFormalExperimentRunner.ExecutedUnit executed = executeRecorded(
+                unit, tc, countingSource(calls, RunStatus.RETRYABLE_FAILURE, null), 2);
 
         assertEquals(1, calls.get(), "attempt2 RETRYABLE 后不得出现 attempt3");
-        assertEquals(2, out.attempts());
-        assertEquals(RunStatus.RETRYABLE_FAILURE, out.outcome().status());
+        assertEquals(2, executed.attempts());
+        assertEquals(RunStatus.RETRYABLE_FAILURE, executed.record().status());
     }
 
     // ============================================================
@@ -126,12 +127,12 @@ class RtmpRetryAttemptCrashConsistencyTest {
         writeLedger(started(unit, 1));
 
         AtomicInteger calls = new AtomicInteger();
-        RtmpFormalExperimentRunner.RetryOutcome out = runWithRetryRecorded(
-                unit, tc, countingSource(calls, RunStatus.INVALID_RUN), 2);
+        RtmpFormalExperimentRunner.ExecutedUnit executed = executeRecorded(
+                unit, tc, countingSource(calls, RunStatus.INVALID_RUN, null), 2);
 
         assertEquals(1, calls.get(), "attempt2 INVALID_RUN 后不得出现 attempt3");
-        assertEquals(2, out.attempts());
-        assertEquals(RunStatus.INVALID_RUN, out.outcome().status());
+        assertEquals(2, executed.attempts());
+        assertEquals(RunStatus.INVALID_RUN, executed.record().status());
     }
 
     // ============================================================
@@ -154,8 +155,7 @@ class RtmpRetryAttemptCrashConsistencyTest {
             return new RtmpRunOutcome(validTrace(unit), RunStatus.VALID);
         };
 
-        RtmpFormalExperimentRunner.ExecutedUnit executed =
-                runner().executeUnitDetailedRecorded(unit, tc, config(), source, ledgerFile(), 1);
+        RtmpFormalExperimentRunner.ExecutedUnit executed = executeRecorded(unit, tc, source, 1);
 
         assertEquals(RunStatus.VALID, executed.record().status());
         assertEquals(2, executed.attempts());
@@ -183,7 +183,7 @@ class RtmpRetryAttemptCrashConsistencyTest {
         // 模拟 crash：attempt1 已 STARTED + COMPLETED(RETRYABLE)，但无 canonical checkpoint
         writeLedger(started(unit0, 1), completed(unit0, 1, RunStatus.RETRYABLE_FAILURE));
 
-        CountingRunner fake = new CountingRunner(unit0.caseId(), unit0.condition(), unit0.repetition());
+        CountingRunner fake = new CountingRunner();
         RtmpFormalExperimentRunner runner = new RtmpFormalExperimentRunner(fake, new MemoryStore());
         RtmpFormalExperimentRunner.RtmpFormalExperimentResult result = runner.run(EXP, tempDir);
 
@@ -230,6 +230,10 @@ class RtmpRetryAttemptCrashConsistencyTest {
         return RtmpAttemptLedgerStore.ledgerFile(tempDir, EXP);
     }
 
+    private Path checkpointFile() {
+        return RtmpCheckpointStore.checkpointFile(tempDir, EXP);
+    }
+
     private RtmpFormalExperimentRunner runner() {
         return new RtmpFormalExperimentRunner(null, new MemoryStore());
     }
@@ -248,6 +252,13 @@ class RtmpRetryAttemptCrashConsistencyTest {
         return next.get(unit.runId());
     }
 
+    private RtmpFormalExperimentRunner.ExecutedUnit executeRecorded(
+            RtmpFormalExperimentPlan.Unit unit, RtmpTestCase tc,
+            RtmpFormalExperimentRunner.OutcomeSource source, int nextAttempt) {
+        return runner().executeUnitRecorded(unit, tc, config(), source, ledgerFile(),
+                checkpointFile(), nextAttempt, 0, new HashSet<>());
+    }
+
     private static RtmpAttemptLedgerEvent started(RtmpFormalExperimentPlan.Unit unit, int attempt) {
         return RtmpAttemptLedgerEvent.started(EXP, unit.runId(), unit.caseId(),
                 unit.condition(), unit.repetition(), attempt);
@@ -260,20 +271,12 @@ class RtmpRetryAttemptCrashConsistencyTest {
     }
 
     private static RtmpFormalExperimentRunner.OutcomeSource countingSource(AtomicInteger calls,
-                                                                           RunStatus status) {
+                                                                           RunStatus status,
+                                                                           ExecutionTrace trace) {
         return (tc, cfg, c, rep) -> {
             calls.incrementAndGet();
-            return new RtmpRunOutcome(null, status);
+            return new RtmpRunOutcome(trace, status);
         };
-    }
-
-    private RtmpFormalExperimentRunner.RetryOutcome runWithRetryRecorded(
-            RtmpFormalExperimentPlan.Unit unit, RtmpTestCase tc,
-            RtmpFormalExperimentRunner.OutcomeSource source, int nextAttempt) {
-        return RtmpFormalExperimentRunner.runWithRetryRecorded(
-                source, tc, config(), ExperimentCondition.valueOf(unit.condition()),
-                unit.repetition(), new MemoryStore(), unit.memoryId(), EXP, unit,
-                ledgerFile(), nextAttempt);
     }
 
     private static ExecutionTrace validTrace(RtmpFormalExperimentPlan.Unit unit) {
@@ -284,15 +287,6 @@ class RtmpRetryAttemptCrashConsistencyTest {
     /** 记录每 (case:condition:repetition) 的真实 invocation 次数，并返回 INVALID_RUN canonical trace。 */
     static final class CountingRunner implements BenchmarkRunner {
         final Map<String, Integer> invocations = new HashMap<>();
-        private final String caseId;
-        private final String condition;
-        private final int repetition;
-
-        CountingRunner(String caseId, String condition, int repetition) {
-            this.caseId = caseId;
-            this.condition = condition;
-            this.repetition = repetition;
-        }
 
         @Override
         public Mono<RtmpRunOutcome> runRtmpCaseOutcome(RtmpTestCase testCase, BenchmarkConfig config,

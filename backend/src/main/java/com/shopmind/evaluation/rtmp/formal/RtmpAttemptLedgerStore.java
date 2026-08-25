@@ -12,8 +12,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -112,6 +115,90 @@ public final class RtmpAttemptLedgerStore {
         if (event == null || !LEDGER_SCHEMA_VERSION.equals(event.schemaVersion())) {
             throw new IllegalStateException("Invalid attempt ledger schema in line: " + line);
         }
+        validateEvent(event, line);
         return event;
+    }
+
+    /** 单事件结构校验（fail-closed）：eventType / attempt / status 语义。 */
+    private static void validateEvent(RtmpAttemptLedgerEvent event, String line) {
+        boolean started = RtmpAttemptLedgerEvent.STARTED.equals(event.eventType());
+        boolean completed = RtmpAttemptLedgerEvent.COMPLETED.equals(event.eventType());
+        if (!started && !completed) {
+            throw new IllegalStateException("Invalid eventType in ledger line: " + line);
+        }
+        if (event.attempt() < 1 || event.attempt() > 2) {
+            throw new IllegalStateException("Invalid attempt in ledger line: " + line);
+        }
+        if (started && event.status() != null) {
+            throw new IllegalStateException("STARTED must not carry status: " + line);
+        }
+        if (completed && !isTerminalStatus(event.status())) {
+            throw new IllegalStateException("COMPLETED must carry terminal status: " + line);
+        }
+    }
+
+    private static boolean isTerminalStatus(String status) {
+        return "VALID".equals(status) || "RETRYABLE_FAILURE".equals(status)
+                || "INVALID_RUN".equals(status);
+    }
+
+    /**
+     * 跨事件 + identity 校验（fail-closed）— Phase 5-R6.1 问题 3。
+     * <p>
+     * 在 {@code load()}（结构校验）之后、{@code buildAttemptRecoveryMap} 之前调用，校验：
+     * <ul>
+     *   <li>experimentId 匹配；runId ∈ plan；caseId/condition/repetition 与 plan 一致；</li>
+     *   <li>同一 runId 内：无重复 {@code STARTED(n)} / {@code COMPLETED(n)}；</li>
+     *   <li>{@code STARTED(2)} 必须已有 {@code STARTED(1)}；</li>
+     *   <li>{@code COMPLETED(n)} 必须已有 {@code STARTED(n)}。</li>
+     * </ul>
+     *
+     * @return 错误列表（空表示合法）；调用方据此拒绝启动，绝不静默忽略坏 ledger。
+     */
+    public static List<String> validate(List<RtmpAttemptLedgerEvent> events, String experimentId,
+                                        RtmpFormalExperimentPlan.Plan plan) {
+        List<String> errors = new ArrayList<>();
+        Map<String, RtmpFormalExperimentPlan.Unit> byRunId = plan.units().stream()
+                .collect(Collectors.toMap(
+                        RtmpFormalExperimentPlan.Unit::runId, u -> u, (a, b) -> a));
+        Map<String, Set<Integer>> startedByRunId = new HashMap<>();
+        Map<String, Set<Integer>> completedByRunId = new HashMap<>();
+
+        for (RtmpAttemptLedgerEvent e : events) {
+            if (!experimentId.equals(e.experimentId())) {
+                errors.add("ledger experimentId mismatch: " + e.experimentId());
+            }
+            RtmpFormalExperimentPlan.Unit unit = e.runId() == null ? null : byRunId.get(e.runId());
+            if (unit == null) {
+                errors.add("ledger runId not in plan: " + e.runId());
+                continue;
+            }
+            if (!unit.caseId().equals(e.caseId())
+                    || !unit.condition().equals(e.condition())
+                    || unit.repetition() != e.repetition()) {
+                errors.add("ledger identity mismatch for runId=" + e.runId()
+                        + " (caseId=" + e.caseId() + ", condition=" + e.condition()
+                        + ", repetition=" + e.repetition() + ")");
+            }
+            Set<Integer> started = startedByRunId.computeIfAbsent(e.runId(), k -> new HashSet<>());
+            Set<Integer> completed = completedByRunId.computeIfAbsent(e.runId(), k -> new HashSet<>());
+            if (RtmpAttemptLedgerEvent.STARTED.equals(e.eventType())) {
+                if (!started.add(e.attempt())) {
+                    errors.add("duplicate STARTED(" + e.attempt() + ") for " + e.runId());
+                }
+                if (e.attempt() == 2 && !started.contains(1)) {
+                    errors.add("STARTED(2) without STARTED(1) for " + e.runId());
+                }
+            } else if (RtmpAttemptLedgerEvent.COMPLETED.equals(e.eventType())) {
+                if (!completed.add(e.attempt())) {
+                    errors.add("duplicate COMPLETED(" + e.attempt() + ") for " + e.runId());
+                }
+                if (!started.contains(e.attempt())) {
+                    errors.add("COMPLETED(" + e.attempt() + ") without STARTED(" + e.attempt()
+                            + ") for " + e.runId());
+                }
+            }
+        }
+        return errors;
     }
 }
