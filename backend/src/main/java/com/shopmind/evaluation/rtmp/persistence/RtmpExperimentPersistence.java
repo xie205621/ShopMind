@@ -37,6 +37,9 @@ public final class RtmpExperimentPersistence {
 
     private static final ObjectMapper MAPPER = configureMapper();
 
+    /** 单行（compact）mapper：与 {@link #MAPPER} 同模块/日期配置，但关闭 INDENT_OUTPUT。 */
+    private static final ObjectMapper COMPACT_MAPPER = configureCompactMapper();
+
     private RtmpExperimentPersistence() {
     }
 
@@ -45,6 +48,13 @@ public final class RtmpExperimentPersistence {
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        return mapper;
+    }
+
+    private static ObjectMapper configureCompactMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
     }
 
@@ -153,6 +163,30 @@ public final class RtmpExperimentPersistence {
             return MAPPER.writeValueAsString(value);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to serialize to JSON", e);
+        }
+    }
+
+    /**
+     * 单行（compact）序列化，供 checkpoint JSONL 等按行读取的 artifact 使用。
+     * 与 {@link #toJson} 使用同一组模块/日期配置，但关闭 INDENT_OUTPUT。
+     */
+    public static String toJsonLine(Object value) {
+        try {
+            return COMPACT_MAPPER.writeValueAsString(value);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to serialize to JSON", e);
+        }
+    }
+
+    /**
+     * 从 JSON 反序列化为指定类型（复用本层的 Jackson mapper 配置，
+     * 供 checkpoint JSONL 等 recovery artifact 读取用）。
+     */
+    public static <T> T readJson(String json, Class<T> type) {
+        try {
+            return MAPPER.readValue(json, type);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to parse JSON to " + type.getSimpleName(), e);
         }
     }
 
