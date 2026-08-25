@@ -24,6 +24,12 @@
   - Pilot = NOT RUN
   - 378 runs = NOT RUN
 
+execution note:
+Known test-runner note:
+a legacy benchmark integration test invokes System.exit;
+Surefire emits fork-JVM termination warning;
+the build still reports 441/0/0/7 and BUILD SUCCESS.
+This does not affect the formal experiment entry point.
 本阶段未运行 Real LLM / Pilot / 378 runs；未修改任何生产代码（新增内容仅限 readiness 测试与本文档）。
 
 ---
