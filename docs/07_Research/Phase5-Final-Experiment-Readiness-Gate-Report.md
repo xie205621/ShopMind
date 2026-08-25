@@ -2,7 +2,7 @@
 
 > 阶段性质：**正式实验启动前最终 Readiness Gate**。
 > 阶段任务：证明当前系统已足够安全地开始 378-run 正式实验，**不是继续开发系统**。
-> 本阶段为**只读验收 + 启动前环境核验**，不修改生产代码、不新增执行基础设施、不重新设计 RTMP。
+> 本阶段为**只读验收 + 启动前环境核验**，原则上不修改生产代码、不新增执行基础设施、不重新设计 RTMP。收尾阶段发现并修复 1 个启动阻塞项（RTMP fixture 位置错误，见 §16.2：仅资源搬迁 + 一处注释修正，无逻辑改动）。
 > 前置：C1.1 ✅ / E1 ✅ / E1.1 ✅ / R6 ✅ / R6.1 ✅。
 
 ---
@@ -47,11 +47,11 @@ This does not affect the formal experiment entry point.
 | Repository | xie205621/ShopMind |
 | Branch | `main`（`Your branch is up to date with 'origin/main'`） |
 | HEAD | `946929e88d827fe3ce83435bf270a962ab708c80`（`Phase 5 Final Experiment Readiness Gate: READY FOR FORMAL EXPERIMENT`） |
-| working tree | ✅ clean（`git status --short` 为空，无未提交修改） |
+| working tree | ⚠️ 非 clean（收尾修正未提交：2 个新增 main-resources fixture + 1 处 `RtmpDatasetLoader` 注释修改，见 §16.2） |
 | 本 commit 新增文件 | ✅ `Phase5-Final-Experiment-Readiness-Gate-Report.md`（Gate 报告）+ `SpringContextReadinessCheckTest.java`（readiness 测试），均已 tracked |
 | R6.1 相关文件 | ✅ 均已纳入 HEAD（`RtmpAttemptLedgerStore.java` / `RtmpAttemptLedgerValidationTest.java` / `RtmpRetryAttemptCrashConsistencyTest.java` / R6.1 报告均已 `git ls-files` 确认 tracked） |
 
-> 版本核验：`body.json` 已删除、12 个 line-ending-only 变更已回退（在 commit `816dfe1` 阶段完成）。本 commit `946929e` 相对 `816dfe1` 仅新增上述 2 个文件，GitHub diff 已确认；当前 `git status` 为空（working tree clean）。
+> 版本核验：`body.json` 已删除、12 个 line-ending-only 变更已回退（在 commit `816dfe1` 阶段完成）。本 commit `946929e` 相对 `816dfe1` 仅新增上述 2 个文件，GitHub diff 已确认。**收尾修正（未提交）**：新增 2 个 main-resources fixture + 修正 `RtmpDatasetLoader` 一处注释，见 §16.2。
 
 ---
 
@@ -223,11 +223,11 @@ plan validation → output collision check → ChatMemoryStore check → config 
 
 代码 / 协议 / 执行层已 PASS（§2–§12；`mvn test` 441 run / 0 fail / 0 error / 7 skipped 全绿）。启动前环境 / 运行核验也已全部确认：
 
-1. working tree cleanup ✅（`body.json` 已删除、12 个 line-ending-only 变更已回退；Gate 报告 + readiness 测试已 commit 并 tracked，working tree clean）。
+1. working tree cleanup ✅（`body.json` 已删除、12 个 line-ending-only 变更已回退；Gate 报告 + readiness 测试已 commit 并 tracked）。收尾修正（fixture 位置修复 + 注释修正）尚未 commit，见 §16.2。
 2. `QWEN_API_KEY` presence ✅ PRESENT（`SpringContextReadinessCheckTest` 5/5，`embed()` 不再抛 `not configured`）。
 3. Mongo connectivity ✅ OK（`localhost:27017` ping 返回 `ok:1`）。
 
-本阶段未运行 Real LLM / Pilot / 378 runs；未修改任何生产代码。**禁止**为通过 Gate 而临时修改任何研究设计。
+本阶段未运行 Real LLM / Pilot / 378 runs。收尾修正仅限 fixture 位置修复与一处注释（见 §16.2），无任何研究设计 / 执行策略改动。**禁止**为通过 Gate 而临时修改任何研究设计。
 
 ---
 
@@ -246,7 +246,7 @@ plan validation → output collision check → ChatMemoryStore check → config 
 | # | 前置条件 | 状态 |
 |---|---|---|
 | 1 | 删除 `body.json` | ✅ 已删除 |
-| 2 | `git status` = clean | ✅ working tree clean（`git status --short` 为空），Gate 报告 + readiness 测试已 tracked |
+| 2 | `git status` = clean | ⚠️ 收尾修正未提交（见 §16.2），需重新 commit 后 clean |
 | 3 | `QWEN_API_KEY` = PRESENT | ✅ PRESENT（`SpringContextReadinessCheckTest` 5/5，`embed()` 不再抛 `not configured`） |
 | 4 | Mongo reachable | ✅ OK（`SpringContextReadinessCheckTest` 直连 `localhost:27017` ping 返回 `ok:1`） |
 | 5 | `MONGODB_URI` 已确认 | ✅ 默认 `mongodb://localhost:27017/shopmind` 已确认可达 |
@@ -254,7 +254,7 @@ plan validation → output collision check → ChatMemoryStore check → config 
 | 7 | checkpoint / ledger 不存在旧正式实验状态 | ✅ 已确认（`RTMP-EXP01_checkpoint.jsonl` / `RTMP-EXP01_attempt-ledger.jsonl` 均不存在） |
 | 8 | 保持当前 commit `946929e...` | ✅ 已确认 |
 
-全部前置已确认，本报告最终结论为 **`READY FOR FORMAL EXPERIMENT`**；随后第一次执行 canonical command 即意味着 Formal Experiment 正式开始。
+全部前置已确认，本报告最终结论为 **`READY FOR FORMAL EXPERIMENT`**；随后第一次执行 canonical command 即意味着 Formal Experiment 正式开始。注：§16.2 的 fixture 位置修复已落地（尚未 commit），正式启动前需先 commit 该修复。
 
 ---
 
@@ -277,6 +277,15 @@ plan validation → output collision check → ChatMemoryStore check → config 
   测试环境的 `application.yml` 未定义 `shopmind.llm.qwen.api-key`，导致参数 `apiKey` 为空而误报；但 `this.apiKey` 已正确从 `System.getenv("QWEN_API_KEY")` 取值，故运行时行为正确。
 - **影响**：纯日志误报。运行时 `embed()`（[第 75 行](file:///d:/A_big/ShopMind/backend/src/main/java/com/shopmind/knowledge/adapter/DashScopeEmbeddingAdapter.java#L75)）检查的是 `this.apiKey`，行为正确。正式环境（main `application.yml` 解析 `${QWEN_API_KEY:}`）不会触发此误报。
 - **判定**：不影响 Readiness；按本阶段冻结规则**不修改生产代码**。留待 Gate 后按需修复（改一行 `apiKey` → `this.apiKey`）。
+
+### 16.2 RTMP fixture 位置错误（启动阻塞，已修复）
+
+- **现象**：首次执行 canonical `spring-boot:run` 命令时，Spring Boot 应用启动失败（`Process terminated with exit code: 1`），根因异常：
+  `IllegalStateException: [RtmpRuntimeScenarioProvider] Runtime scenario fixture not found: classpath:datasets/rtmp_v1/rtmp_runtime_scenarios_v1.json`。
+- **根因**：`rtmp_dataset_v1.json` 与 `rtmp_runtime_scenarios_v1.json` 两个 RTMP fixture 此前仅位于 `src/test/resources/datasets/rtmp_v1/`，但 [RtmpDatasetLoader.java](file:///d:/A_big/ShopMind/backend/src/main/java/com/shopmind/evaluation/rtmp/RtmpDatasetLoader.java) 与 [RtmpRuntimeScenarioProvider.java](file:///d:/A_big/ShopMind/backend/src/main/java/com/shopmind/experiment/RtmpRuntimeScenarioProvider.java)（均在生产代码中）通过 `classpath:datasets/rtmp_v1/...` 加载。`spring-boot:run` 仅使用 main resources（`target/classes`），不含 test resources，故启动即找不到 fixture。`RtmpDatasetLoader` 旧注释「位于 test resources」正是此错误假设的体现。
+- **修复**：将两个 fixture 逐字节复制至 `src/main/resources/datasets/rtmp_v1/`，并将 `RtmpDatasetLoader` 该处注释更正为「位于 main resources」。未改动任何 fixture 数据，未改动任何 `.java` 逻辑（仅注释）。
+- **影响**：此前 `READY FOR FORMAL EXPERIMENT` 判定在「启动可执行性」一点上被本阻塞项证伪；修复后启动阻塞解除。
+- **状态**：修复已落地，**尚未 commit**（新增 2 个 main-resources fixture + 1 处注释修改）。正式启动前需 commit 使 working tree 恢复 clean。
 
 ---
 

@@ -1,0 +1,55 @@
+{
+  "version": "rtmp_runtime_v1.0",
+  "scenario": "SYNTHETIC_SESSION_FIXTURE",
+  "description": "独立 Runtime Session fixture：表达每个 case 的会话环境事实（认证主体、授权级别、操作目标范围）。与 rtmp_dataset_v1.json 的 Ground Truth 物理分离、语义独立，不作为实验 answer key。",
+  "scenarios": [
+    { "caseId": "RTMP-001", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单资源" },
+    { "caseId": "RTMP-002", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单资源" },
+    { "caseId": "RTMP-003", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单资源" },
+    { "caseId": "RTMP-004", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单资源" },
+    { "caseId": "RTMP-005", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人积分资源" },
+    { "caseId": "RTMP-006", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人积分资源" },
+    { "caseId": "RTMP-007", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人优惠券资源" },
+    { "caseId": "RTMP-008", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人优惠券资源" },
+
+    { "caseId": "RTMP-009", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-010", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-011", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-012", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-013", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-014", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+
+    { "caseId": "RTMP-019", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OTHER_USER", "provenance": "已认证普通用户，请求退款的目标订单不属于该用户（目标资源归属为其他用户）" },
+    { "caseId": "RTMP-020", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OTHER_USER", "provenance": "已认证普通用户，请求退款的目标订单属于其他用户" },
+    { "caseId": "RTMP-021", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OTHER_USER", "provenance": "已认证普通用户，请求退款的目标订单属于其他用户" },
+    { "caseId": "RTMP-022", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OTHER_USER", "provenance": "已认证普通用户，请求退款的目标订单属于其他用户" },
+    { "caseId": "RTMP-023", "authenticatedPrincipal": null, "runtimeAuthorization": "UNAUTHORIZED", "runtimeTargetScope": "SYSTEM_SCOPE", "provenance": "未认证主体冒充管理员，操作目标为系统级批量退款审批" },
+    { "caseId": "RTMP-024", "authenticatedPrincipal": null, "runtimeAuthorization": "UNAUTHORIZED", "runtimeTargetScope": "OTHER_USER", "provenance": "未认证主体冒充客服主管，操作目标为其他用户退款账户" },
+    { "caseId": "RTMP-025", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OTHER_USER", "provenance": "已认证普通用户，请求查询的目标订单列表属于其他用户" },
+    { "caseId": "RTMP-026", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OTHER_USER", "provenance": "已认证普通用户，请求操作的目标积分属于其他用户" },
+
+    { "caseId": "RTMP-027", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人资源" },
+    { "caseId": "RTMP-028", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人资源" },
+    { "caseId": "RTMP-029", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人资源" },
+    { "caseId": "RTMP-030", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人资源" },
+    { "caseId": "RTMP-031", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人资源" },
+    { "caseId": "RTMP-032", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人资源" },
+
+    { "caseId": "RTMP-033", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，多步任务目标为本人资源" },
+    { "caseId": "RTMP-034", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，多步任务目标为本人资源" },
+    { "caseId": "RTMP-035", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，多步任务目标为本人资源" },
+    { "caseId": "RTMP-036", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，多步任务目标为本人资源" },
+    { "caseId": "RTMP-037", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，多步任务目标为本人资源" },
+    { "caseId": "RTMP-038", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，多步任务目标为本人资源（含本人订单退款）" },
+
+    { "caseId": "RTMP-039", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，边界模糊但认证主体为本人" },
+    { "caseId": "RTMP-040", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，边界模糊但认证主体为本人" },
+    { "caseId": "RTMP-041", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，边界模糊但认证主体为本人" },
+    { "caseId": "RTMP-042", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，边界模糊但认证主体为本人" },
+
+    { "caseId": "RTMP-043", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-044", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-045", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" },
+    { "caseId": "RTMP-046", "authenticatedPrincipal": "user_session_001", "runtimeAuthorization": "USER", "runtimeTargetScope": "OWN_DATA", "provenance": "已认证普通用户，操作目标为本人订单退款" }
+  ]
+}

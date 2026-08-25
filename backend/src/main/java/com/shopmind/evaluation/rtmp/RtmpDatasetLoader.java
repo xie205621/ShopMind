@@ -39,7 +39,7 @@ public final class RtmpDatasetLoader {
     private static final Logger log = LoggerFactory.getLogger(RtmpDatasetLoader.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    /** RTMP 数据集资源（位于 test resources；精确匹配，避免与 runtime scenario fixture 混淆） */
+    /** RTMP 数据集资源（位于 main resources；精确匹配，避免与 runtime scenario fixture 混淆） */
     private static final String DATASET_PATTERN = "classpath:datasets/rtmp_v1/rtmp_dataset_v1.json";
 
     /** 冻结的 dataset version */
